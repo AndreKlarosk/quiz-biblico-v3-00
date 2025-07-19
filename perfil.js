@@ -78,10 +78,11 @@ const allBorders = {
     'geometrico_teal': { name: 'Geométrico Teal' },
     'folhas_violeta': { name: 'Folhas Violeta' },
     'galhos_cinza': { name: 'Galhos Cinza' },
-    'ranking_bronze': { name: 'Bronze Rank' },
-    'ranking_prata': { name: 'Prata Rank' },
-    'ranking_ouro': { name: 'Ouro Rank' },
-    'competicao_vencedor': { name: 'Campeão' }
+    // Novas bordas de competição
+    'borda_competicao_ouro': { name: 'Campeão (Ouro)' },
+    'borda_competicao_prata': { name: 'Vice-Campeão (Prata)' },
+    'borda_competicao_bronze': { name: 'Pódio (Bronze)' },
+    'borda_competicao_honra': { name: 'Menção Honrosa' }
 };
 
 // --- Lógica Principal ---
@@ -101,7 +102,7 @@ window.addEventListener('DOMContentLoaded', () => {
         loadProfileData();
     });
 
-    // CORREÇÃO: Adiciona os event listeners para o modal de bordas usando a classe 'visible'
+    // Event listeners para o modal de bordas
     if (changeBorderBtn) changeBorderBtn.addEventListener('click', () => {
         if (bordersModal) bordersModal.classList.add('visible');
     });
@@ -157,8 +158,17 @@ function displayProfileData(data) {
         
         if (bordersGridModal) {
             bordersGridModal.innerHTML = '';
+            
+            const userAchievements = new Set(data.conquistas || []);
             const unlockedBorders = new Set(data.bordasDesbloqueadas || []);
-            // Desbloqueando todas as bordas para visualização
+
+            // Lógica para desbloquear bordas automaticamente com base nas conquistas
+            if (userAchievements.has('competicao_ouro')) unlockedBorders.add('borda_competicao_ouro');
+            if (userAchievements.has('competicao_prata')) unlockedBorders.add('borda_competicao_prata');
+            if (userAchievements.has('competicao_bronze')) unlockedBorders.add('borda_competicao_bronze');
+            if (userAchievements.has('competicao_honra')) unlockedBorders.add('borda_competicao_honra');
+
+            // Bordas que todos os usuários possuem
             unlockedBorders.add('default');
             unlockedBorders.add('simples_azul');
             unlockedBorders.add('simples_verde');
@@ -167,7 +177,6 @@ function displayProfileData(data) {
             unlockedBorders.add('geometrico_teal');
             unlockedBorders.add('folhas_violeta');
             unlockedBorders.add('galhos_cinza');
-
 
             Object.keys(allBorders).forEach(key => {
                 if (unlockedBorders.has(key)) {
@@ -187,7 +196,6 @@ function displayProfileData(data) {
                     borderElement.style.alignItems = 'center';
                     borderElement.style.justifyContent = 'center';
                     borderElement.style.margin = '5px';
-
 
                     const img = document.createElement('img');
                     img.src = data.fotoURL || 'https://placehold.co/150x150/e0e0e0/333?text=?';

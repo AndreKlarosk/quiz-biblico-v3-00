@@ -16,6 +16,7 @@
                 <div id="group-icon" class="group-icon"></div>
                 <h2 id="group-name">Nome do Grupo</h2>
                 <p>Criado por: <span id="group-creator"></span></p>
+                <p>Dificuldade: <strong id="group-difficulty" style="text-transform: capitalize;"></strong></p>
             </header>
             <section class="group-ranking">
                 <h3><i class="fas fa-trophy"></i> Ranking do Grupo</h3>
@@ -32,7 +33,6 @@
             </section>
             <div id="group-actions" class="group-actions"></div>
 
-            <!-- NOVA SECÇÃO DE CHAT -->
             <section id="group-chat" class="group-chat hidden">
                 <h3><i class="fas fa-comments"></i> Chat do Grupo</h3>
                 <div id="chat-messages" class="chat-messages">
@@ -57,7 +57,13 @@
             <h3>Editar Grupo</h3>
             <label for="edit-group-name-input">Nome do Grupo</label>
             <input type="text" id="edit-group-name-input" placeholder="Nome do seu grupo" maxlength="50">
-            <label>Ícone do Grupo</label>
+            <label for="edit-group-difficulty-select" style="margin-top: 1rem; display: block;">Nível de Dificuldade Padrão</label>
+            <select id="edit-group-difficulty-select" class="styled-select">
+                <option value="facil">Fácil</option>
+                <option value="medio">Médio</option>
+                <option value="dificil">Difícil</option>
+            </select>
+            <label style="margin-top: 1rem; display: block;">Ícone do Grupo</label>
             <div id="icon-selection" class="icon-selection"></div>
             <button id="save-group-btn" class="btn">Salvar Alterações</button>
             <button id="cancel-group-btn" class="btn btn-secondary">Cancelar</button>

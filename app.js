@@ -39,6 +39,7 @@ const rankingCard = document.getElementById('ranking-card');
 const rankingModal = document.getElementById('ranking-modal');
 const rankingTbody = document.getElementById('ranking-tbody');
 const closeRankingBtn = document.getElementById('close-ranking-btn');
+const leaveQuizBtn = document.getElementById('leave-quiz-btn');
 
 // --- Estado do Quiz ---
 let currentUser = null;
@@ -457,6 +458,18 @@ async function checkAndAwardAchievements(userRef) {
         }, 500);
     }
 }
+
+if (leaveQuizBtn) {
+    leaveQuizBtn.addEventListener('click', () => {
+        if (confirm("Tem certeza de que deseja sair do quiz? O seu progresso nesta partida não será salvo.")) {
+            sessionStorage.removeItem('currentGroupId');
+            sessionStorage.removeItem('currentGroupDifficulty');
+            updateUiforGroupMode();
+            switchScreen('initial-screen');
+        }
+    });
+}
+
 if (restartBtn) restartBtn.addEventListener('click', () => {
     sessionStorage.removeItem('currentGroupId');
     sessionStorage.removeItem('currentGroupDifficulty');

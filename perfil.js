@@ -36,33 +36,47 @@ let profileUid = null;
 
 // LISTA DE CONQUISTAS EXPANDIDA
 const allAchievements = {
+    // Progressão de Quizzes Jogados
     'iniciante_da_fe': { title: 'Iniciante da Fé', description: 'Completou seu primeiro quiz.', icon: '📖' },
     'peregrino_fiel': { title: 'Peregrino Fiel', description: 'Jogou 10 quizzes.', icon: '👣' },
     'discipulo_dedicado': { title: 'Discípulo Dedicado', description: 'Jogou 50 quizzes.', icon: '🚶‍♂️' },
     'veterano_da_palavra': { title: 'Veterano da Palavra', description: 'Jogou 100 quizzes.', icon: '🏃‍♂️' },
+    
+    // Progressão de Pontuação Total
     'erudito_aprendiz': { title: 'Erudito Aprendiz', description: 'Alcançou 1.000 pontos totais.', icon: '📜' },
     'sabio_de_israel': { title: 'Sábio de Israel', description: 'Alcançou 5.000 pontos totais.', icon: '👑' },
     'conselheiro_real': { title: 'Conselheiro Real', description: 'Alcançou 10.000 pontos totais.', icon: '🏛️' },
     'patriarca_do_saber': { title: 'Patriarca do Saber', description: 'Alcançou 25.000 pontos totais.', icon: '🌟' },
+
+    // Progressão de Respostas Corretas
     'mestre_da_palavra': { title: 'Mestre da Palavra', description: 'Acertou 100 perguntas.', icon: '✒️' },
     'escriba_habil': { title: 'Escriba Hábil', description: 'Acertou 500 perguntas.', icon: '✍️' },
     'doutor_da_lei': { title: 'Doutor da Lei', description: 'Acertou 1.000 perguntas.', icon: '🎓' },
+
+    // Desempenho em um único Quiz
     'quase_la': { title: 'Quase Lá', description: 'Fez 90 pontos em um único quiz.', icon: '🥈' },
     'perfeccionista': { title: 'Perfeccionista', description: 'Fez 100 pontos em um único quiz.', icon: '🏆' },
     'impecavel': { title: 'Impecável', description: 'Completou um quiz sem errar nenhuma pergunta.', icon: '🎯' },
+    
+    // Conquistas por Dificuldade (Pontuação)
     'explorador_facil': { title: 'Explorador Dócil', description: 'Alcançou 1.000 pontos no nível Fácil.', icon: '🐑' },
     'desafiante_medio': { title: 'Desafiante Sólido', description: 'Alcançou 1.000 pontos no nível Médio.', icon: '🗿' },
     'estrategista_dificil': { title: 'Estrategista Audaz', description: 'Alcançou 1.000 pontos no nível Difícil.', icon: '🦁' },
+
+    // Conquistas Sociais (Grupos)
     'fundador_de_grupo': { title: 'Fundador', description: 'Criou seu primeiro grupo.', icon: '🏗️' },
     'socializador': { title: 'Socializador', description: 'Entrou em um grupo.', icon: '🤝' },
     'competidor': { title: 'Competidor', description: 'Jogou uma partida por um grupo.', icon: '⚔️' },
     'campeao_de_grupo': { title: 'Campeão de Grupo', description: 'Alcançou 1.000 pontos em um grupo.', icon: '🥇' },
+    
+    // Novas Conquistas de Competição
     'competicao_ouro': { title: 'Campeão da Competição', description: 'Venceu uma competição em 1º lugar.', icon: '🏆' },
     'competicao_prata': { title: 'Vice-Campeão', description: 'Ficou em 2º lugar em uma competição.', icon: '🥈' },
     'competicao_bronze': { title: 'Pódio de Bronze', description: 'Ficou em 3º lugar em uma competição.', icon: '🥉' },
     'competicao_honra': { title: 'Menção Honrosa', description: 'Ficou em 4º lugar em uma competição.', icon: '🎖️' }
 };
 
+// DEFINIÇÃO DAS BORDAS
 const allBorders = {
     'default': { name: 'Padrão' },
     'simples_azul': { name: 'Azul Simples' },
@@ -73,6 +87,7 @@ const allBorders = {
     'ranking_ouro': { name: 'Ouro Rank' },
     'competicao_vencedor': { name: 'Campeão' }
 };
+
 
 // --- Lógica Principal ---
 window.addEventListener('DOMContentLoaded', () => {

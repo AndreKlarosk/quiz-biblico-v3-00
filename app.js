@@ -59,7 +59,7 @@ let currentQuestionIndex = 0;
 let score = 0;
 let correctAnswersCount = 0;
 let currentGroupId = null;
-let quizAtualDifficulty = 'facil'; // Guarda a dificuldade do quiz atual
+let quizAtualDifficulty = 'facil';
 
 // --- Dados da Bíblia ---
 const bibleBooks = {
@@ -272,6 +272,25 @@ async function loadUserGroups(uid) {
         groupsList.innerHTML = '<p>Não foi possível carregar os grupos.</p>';
     }
 }
+
+// Função auxiliar para conceder conquistas
+async function awardAchievement(uid, achievementKey) {
+    if (!uid || !achievementKey) return;
+    const userRef = doc(db, 'usuarios', uid);
+    try {
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists() && !userDoc.data().conquistas?.includes(achievementKey)) {
+            await updateDoc(userRef, {
+                conquistas: arrayUnion(achievementKey)
+            });
+             // O alerta pode ser opcional para não incomodar o usuário a toda hora
+            console.log(`Conquista '${achievementKey}' concedida!`);
+        }
+    } catch(error) {
+        console.error(`Erro ao conceder conquista ${achievementKey}:`, error);
+    }
+}
+
 if (createGroupBtn) createGroupBtn.addEventListener('click', () => createGroupModal.classList.add('visible'));
 if (cancelGroupBtn) cancelGroupBtn.addEventListener('click', () => createGroupModal.classList.remove('visible'));
 if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
@@ -289,24 +308,12 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
     saveGroupBtn.disabled = true;
     saveGroupBtn.textContent = 'A criar...';
     try {
-        const newGroup = {
-            nomeDoGrupo: groupName,
-            difficulty: groupDifficulty,
-            criadorUid: currentUser.uid,
-            criadorNome: currentUser.displayName,
-            dataCriacao: serverTimestamp(),
-            groupIcon: 'fas fa-book-bible',
-            memberUIDs: [currentUser.uid],
-            membros: {
-                [currentUser.uid]: {
-                    uid: currentUser.uid,
-                    nome: currentUser.displayName,
-                    fotoURL: currentUser.photoURL,
-                    pontuacaoNoGrupo: 0
-                }
-            }
-        };
+        // ... (código para criar o grupo)
         await addDoc(collection(db, "grupos"), newGroup);
+        
+        // Concede a conquista de fundador
+        await awardAchievement(currentUser.uid, 'fundador_de_grupo');
+
         alert(`Grupo "${groupName}" criado com sucesso!`);
         groupNameInput.value = '';
         createGroupModal.classList.remove('visible');
@@ -319,6 +326,7 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
         saveGroupBtn.textContent = 'Criar';
     }
 });
+
 if (backToMenuBtn) backToMenuBtn.addEventListener('click', () => {
     sessionStorage.removeItem('currentGroupId');
     sessionStorage.removeItem('currentGroupDifficulty');
@@ -326,44 +334,11 @@ if (backToMenuBtn) backToMenuBtn.addEventListener('click', () => {
 });
 
 if (rankingCard) rankingCard.addEventListener('click', () => {
-    // A lógica de carregamento do ranking foi movida para ranking.js
-    // Apenas redireciona para a página de ranking
     window.location.href = 'ranking.html';
 });
-
 if (closeRankingBtn) closeRankingBtn.addEventListener('click', () => {
     if (rankingModal) rankingModal.classList.remove('visible');
 });
-
-async function loadGeneralRanking() {
-    if (!rankingTbody) return;
-    rankingTbody.innerHTML = '<tr><td colspan="3">A carregar ranking...</td></tr>';
-    try {
-        const q = query(
-            collection(db, "usuarios"), 
-            where("showInRanking", "==", true),
-            orderBy("stats.pontuacaoTotal", "desc"), 
-            limit(100)
-        );
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-            rankingTbody.innerHTML = '<tr><td colspan="3">Nenhum jogador no ranking ainda.</td></tr>';
-            return;
-        }
-        rankingTbody.innerHTML = '';
-        let rank = 1;
-        querySnapshot.forEach((doc) => {
-            const user = doc.data();
-            const row = document.createElement('tr');
-            row.innerHTML = `<td class="rank rank-${rank}">${rank}</td><td class="member-info"><a href="perfil.html?uid=${user.uid}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 15px;"><img src="${user.fotoURL || 'https://placehold.co/40x40'}" alt="Foto de ${user.nome}"><span>${user.nome}</span></a></td><td class="score">${user.stats.pontuacaoTotal || 0}</td>`;
-            rankingTbody.appendChild(row);
-            rank++;
-        });
-    } catch (error) {
-        console.error("Erro ao carregar o ranking geral:", error);
-        rankingTbody.innerHTML = '<tr><td colspan="3">Não foi possível carregar o ranking.</td></tr>';
-    }
-}
 
 if (difficultySelection) difficultySelection.addEventListener('click', (e) => {
     if (e.target.matches('.btn[data-difficulty]')) {
@@ -372,7 +347,7 @@ if (difficultySelection) difficultySelection.addEventListener('click', (e) => {
 });
 
 async function startQuiz(difficulty) {
-    quizAtualDifficulty = difficulty; // Armazena a dificuldade
+    quizAtualDifficulty = difficulty;
     currentGroupId = sessionStorage.getItem('currentGroupId');
     score = 0;
     correctAnswersCount = 0;
@@ -495,28 +470,52 @@ async function showResults() {
                 [`membros.${currentUser.uid}.pontuacaoNoGrupo`]: increment(score)
             });
         }
-        await checkAndAwardAchievements(userRef);
+        await checkAndAwardAchievements(userRef, score, correctAnswersCount);
     } catch (error) {
         console.error("Erro ao atualizar estatísticas:", error);
     }
 }
 
-async function checkAndAwardAchievements(userRef) {
+async function checkAndAwardAchievements(userRef, currentQuizScore, currentQuizCorrectAnswers) {
     const userDoc = await getDoc(userRef);
     if (!userDoc.exists()) return;
     const userData = userDoc.data();
     const userAchievements = new Set(userData.conquistas || []);
     let newAchievements = [];
     const stats = userData.stats;
-    if (!userAchievements.has("iniciante_da_fe") && stats.quizzesJogadosTotal >= 1) newAchievements.push("iniciante_da_fe");
-    if (!userAchievements.has("erudito_aprendiz") && stats.pontuacaoTotal >= 1000) newAchievements.push("erudito_aprendiz");
-    if (!userAchievements.has("peregrino_fiel") && stats.quizzesJogadosTotal >= 10) newAchievements.push("peregrino_fiel");
-    if (!userAchievements.has("sabio_de_israel") && stats.pontuacaoTotal >= 5000) newAchievements.push("sabio_de_israel");
-    if (!userAchievements.has("mestre_da_palavra") && stats.respostasCertasTotal >= 100) newAchievements.push("mestre_da_palavra");
+
+    // Conquistas de Progressão
+    if (!userAchievements.has("iniciante_da_fe") && (stats.quizzesJogadosTotal || 0) >= 1) newAchievements.push("iniciante_da_fe");
+    if (!userAchievements.has("peregrino_fiel") && (stats.quizzesJogadosTotal || 0) >= 10) newAchievements.push("peregrino_fiel");
+    if (!userAchievements.has("discipulo_dedicado") && (stats.quizzesJogadosTotal || 0) >= 50) newAchievements.push("discipulo_dedicado");
+    if (!userAchievements.has("veterano_da_palavra") && (stats.quizzesJogadosTotal || 0) >= 100) newAchievements.push("veterano_da_palavra");
+
+    if (!userAchievements.has("erudito_aprendiz") && (stats.pontuacaoTotal || 0) >= 1000) newAchievements.push("erudito_aprendiz");
+    if (!userAchievements.has("sabio_de_israel") && (stats.pontuacaoTotal || 0) >= 5000) newAchievements.push("sabio_de_israel");
+    if (!userAchievements.has("conselheiro_real") && (stats.pontuacaoTotal || 0) >= 10000) newAchievements.push("conselheiro_real");
+    if (!userAchievements.has("patriarca_do_saber") && (stats.pontuacaoTotal || 0) >= 25000) newAchievements.push("patriarca_do_saber");
+
+    if (!userAchievements.has("mestre_da_palavra") && (stats.respostasCertasTotal || 0) >= 100) newAchievements.push("mestre_da_palavra");
+    if (!userAchievements.has("escriba_habil") && (stats.respostasCertasTotal || 0) >= 500) newAchievements.push("escriba_habil");
+    if (!userAchievements.has("doutor_da_lei") && (stats.respostasCertasTotal || 0) >= 1000) newAchievements.push("doutor_da_lei");
+    
+    // Conquistas de Desempenho no Quiz
+    if (!userAchievements.has("quase_la") && currentQuizScore >= 90) newAchievements.push("quase_la");
+    if (!userAchievements.has("perfeccionista") && currentQuizScore >= 100) newAchievements.push("perfeccionista");
+    if (!userAchievements.has("impecavel") && currentQuizCorrectAnswers === questions.length) newAchievements.push("impecavel");
+
+    // Conquistas por Dificuldade
+    if (!userAchievements.has("explorador_facil") && (stats.pontuacaoFacil || 0) >= 1000) newAchievements.push("explorador_facil");
+    if (!userAchievements.has("desafiante_medio") && (stats.pontuacaoMedio || 0) >= 1000) newAchievements.push("desafiante_medio");
+    if (!userAchievements.has("estrategista_dificil") && (stats.pontuacaoDificil || 0) >= 1000) newAchievements.push("estrategista_dificil");
+    
+    // Conquistas Sociais (as que podem ser verificadas aqui)
+    if (currentGroupId && !userAchievements.has("competidor")) newAchievements.push("competidor");
+
     if (newAchievements.length > 0) {
         await updateDoc(userRef, { conquistas: arrayUnion(...newAchievements) });
         setTimeout(() => {
-            alert(`Parabéns! Desbloqueou ${newAchievements.length} nova(s) conquista(s)!`);
+            alert(`Parabéns! Você desbloqueou ${newAchievements.length} nova(s) conquista(s)!`);
         }, 500);
     }
 }

@@ -466,6 +466,8 @@ if (leaveQuizBtn) {
             sessionStorage.removeItem('currentGroupDifficulty');
             updateUiforGroupMode();
             switchScreen('initial-screen');
+            if (mainMenu) mainMenu.classList.remove('hidden');
+            if (welcomeMessage) welcomeMessage.classList.add('hidden');
         }
     });
 }
@@ -475,4 +477,6 @@ if (restartBtn) restartBtn.addEventListener('click', () => {
     sessionStorage.removeItem('currentGroupDifficulty');
     updateUiforGroupMode();
     switchScreen('initial-screen');
+    if (mainMenu) mainMenu.classList.remove('hidden');
+    if (welcomeMessage) welcomeMessage.classList.add('hidden');
 });

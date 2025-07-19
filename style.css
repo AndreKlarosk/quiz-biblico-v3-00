@@ -1,188 +1,440 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Lora:ital,wght@1,400;1,600&display=swap');
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+import { auth, db } from './firebase.js';
+import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-:root {
-  --primary-color: #1a237e;  /* Azul Marinho Profundo */
-  --secondary-color: #3949ab; /* Índigo */
-  --accent-color: #fdd835;   /* Amarelo Dourado */
-  --light-color: #ffffff;
-  --dark-color: #263238;
-  --gray-color: #f5f7fa;
-  --success-color: #43a047;
-  --danger-color: #e53935;
-  
-  --font-family-headings: 'Montserrat', sans-serif;
-  --font-family-body: 'Montserrat', sans-serif;
-  --font-family-quote: 'Lora', serif;
+// --- Elementos da UI ---
+const loginBtn = document.getElementById('login-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const userInfoDiv = document.getElementById('user-info');
+const userNameSpan = document.getElementById('user-name');
+const userPhotoImg = document.getElementById('user-photo');
+const adminLink = document.getElementById('admin-link');
+const profileLink = document.getElementById('profile-link');
+const welcomeMessage = document.getElementById('welcome-message');
+const mainMenu = document.getElementById('main-menu');
+const difficultySelection = document.getElementById('difficulty-selection');
+const initialScreen = document.getElementById('initial-screen');
+const quizScreen = document.getElementById('quiz-screen');
+const resultScreen = document.getElementById('result-screen');
+const progressBar = document.getElementById('quiz-progress-bar');
+const questionText = document.getElementById('question-text');
+const optionsContainer = document.getElementById('options-container');
+const feedback = document.getElementById('feedback');
+const reference = document.getElementById('reference');
+const nextBtn = document.getElementById('next-btn');
+const finalScore = document.getElementById('final-score');
+const restartBtn = document.getElementById('restart-btn');
+const groupsContainer = document.getElementById('groups-container');
+const groupsList = document.getElementById('groups-list');
+const createGroupBtn = document.getElementById('create-group-btn');
+const createGroupModal = document.getElementById('create-group-modal');
+const groupNameInput = document.getElementById('group-name-input');
+const saveGroupBtn = document.getElementById('save-group-btn');
+const cancelGroupBtn = document.getElementById('cancel-group-btn');
+const groupPlayNotification = document.getElementById('group-play-notification');
+const groupPlayName = document.getElementById('group-play-name');
+const backToMenuBtn = document.getElementById('back-to-menu-btn');
+const rankingCard = document.getElementById('ranking-card');
+const rankingModal = document.getElementById('ranking-modal');
+const rankingTbody = document.getElementById('ranking-tbody');
+const closeRankingBtn = document.getElementById('close-ranking-btn');
+
+// --- Estado do Quiz ---
+let currentUser = null;
+let questions = [];
+let currentQuestionIndex = 0;
+let score = 0;
+let correctAnswersCount = 0;
+let currentGroupId = null;
+
+// --- Inicialização ---
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const groupIdFromUrl = urlParams.get('groupId');
+    if (groupIdFromUrl) {
+        sessionStorage.setItem('currentGroupId', groupIdFromUrl);
+    }
+    if (window.history.replaceState) {
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+    }
+});
+
+// --- Funções ---
+function switchScreen(newScreenId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+        if (screen && !screen.classList.contains('hidden')) {
+            screen.classList.add('hidden');
+        }
+    });
+    const screenToShow = document.getElementById(newScreenId);
+    if (screenToShow) {
+        screenToShow.classList.remove('hidden');
+    }
 }
 
-/* --- RESET E GLOBAIS --- */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: var(--font-family-body); background: var(--gray-color); color: var(--dark-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 1rem; }
-
-/* --- CONTAINER E TELAS --- */
-.container { background-color: var(--light-color); padding: 2rem 2.5rem; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); width: 100%; max-width: 992px; text-align: center; border: 1px solid #e0e0e0; }
-.screen { transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; }
-.screen.hidden { position: absolute; opacity: 0; transform: scale(0.95); pointer-events: none; }
-.hidden { display: none !important; }
-
-/* --- CABEÇALHO --- */
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #e0e0e0; }
-.header h1 { font-family: var(--font-family-headings); font-size: 2rem; color: var(--primary-color); font-weight: 700; }
-.user-info { display: flex; align-items: center; gap: 10px; }
-.user-info img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--accent-color); }
-.user-details span { font-weight: 600; }
-.user-links { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.user-links a { text-decoration: none; font-weight: 600; font-size: 0.8rem; padding: 2px 6px; border-radius: 5px; transition: background-color 0.2s; }
-.user-links a#profile-link { color: var(--secondary-color); }
-.user-links a#profile-link:hover { background-color: #e3f2fd; }
-.user-links a#admin-link { color: var(--danger-color); }
-.user-links a#admin-link:hover { background-color: #ffebee; }
-.user-links a#logout-btn { color: #75757d; }
-.user-links a#logout-btn:hover { background-color: #f5f5f5; }
-
-/* --- BOTÕES GERAIS --- */
-.btn { background: linear-gradient(45deg, var(--secondary-color), var(--primary-color)); color: white; border: none; padding: 14px 30px; border-radius: 50px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: transform 0.2s, box-shadow 0.2s; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-.btn:hover { transform: translateY(-3px); box-shadow: 0 7px 20px rgba(0, 0, 0, 0.15); }
-.btn:active { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
-.btn-google { background: #db4437; }
-.btn-secondary { background: #6c757d; }
-.btn i { font-size: 1.1em; }
-.back-link { text-decoration: none; margin-bottom: 20px; }
-
-/* --- TELA INICIAL --- */
-#initial-screen h2 { font-family: var(--font-family-quote); font-weight: 600; font-size: 1.5rem; margin: 2rem 0; color: #555; line-height: 1.6; }
-.main-menu { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-top: 2rem; }
-.menu-card { background-color: var(--gray-color); padding: 2rem; border-radius: 16px; border: 1px solid #e0e0e0; transition: transform 0.3s, box-shadow 0.3s; }
-.menu-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-.menu-card h3 { font-size: 1.5rem; margin-bottom: 1rem; color: var(--primary-color); }
-.menu-card p { margin-bottom: 1.5rem; color: #666; }
-#groups-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; max-height: 200px; overflow-y: auto; padding-right: 10px; }
-.group-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #fff; border-radius: 8px; text-decoration: none; color: var(--dark-color); border: 1px solid #ddd; transition: background-color 0.2s; }
-.group-item:hover { background-color: #eef5ff; }
-.group-item span { font-weight: 600; }
-.group-item .member-count { font-size: 0.9rem; color: #6c757d; }
-#group-play-notification { background-color: #fffde7; color: #fbc02d; border: 1px solid var(--accent-color); padding: 10px; border-radius: 8px; margin-bottom: 1rem; font-weight: 600; }
-#group-play-notification p { margin: 0; color: var(--dark-color); }
-#individual-quiz-card.group-mode { border: 2px solid var(--accent-color); box-shadow: 0 0 20px rgba(253, 216, 53, 0.5); }
-
-/* --- QUIZ --- */
-#quiz-progress-container { width: 100%; background-color: #e0e0e0; border-radius: 10px; margin-bottom: 1rem; }
-#quiz-progress-bar { width: 0%; height: 10px; background: linear-gradient(90deg, var(--accent-color), #fbc02d); border-radius: 10px; transition: width 0.3s ease-in-out; }
-#quiz-screen h3 { font-size: 1.6rem; font-weight: 600; margin-bottom: 2rem; line-height: 1.5; }
-.options-container { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
-.option-btn { background: var(--light-color); color: var(--secondary-color); border: 2px solid #e0e0e0; width: 100%; text-align: left; padding: 15px; border-radius: 12px; font-size: 1rem; font-weight: 600; text-transform: none; letter-spacing: 0; box-shadow: none; }
-.option-btn:hover { border-color: var(--accent-color); background-color: #fffde7; }
-.option-btn.correct { background-color: var(--success-color); border-color: var(--success-color); color: white; animation: pulse 0.5s; }
-.option-btn.wrong { background-color: var(--danger-color); border-color: var(--danger-color); color: white; animation: shake 0.5s; }
-.option-btn:disabled:not(.correct) { opacity: 0.6; }
-#feedback-container { min-height: 60px; }
-#feedback { margin-top: 15px; font-weight: 600; font-size: 1.2rem; }
-#reference { font-size: 0.9rem; color: #6c757d; font-style: italic; }
-@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-
-/* --- TELA FINAL --- */
-#result-screen h2 { color: var(--primary-color); font-size: 2.5rem; margin-bottom: 10px; }
-#final-score { font-size: 4rem; font-weight: 700; color: var(--accent-color); text-shadow: 2px 2px 5px rgba(0,0,0,0.1); }
-#motivational-message { margin: 20px 0; font-size: 1.1rem; line-height: 1.6; font-family: var(--font-family-quote); }
-
-/* --- PÁGINA DE PERFIL --- */
-.profile-header { display: flex; flex-direction: column; align-items: center; gap: 20px; margin-bottom: 30px; text-align: center; }
-.profile-header img { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--accent-color); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-.profile-info h2 { margin-bottom: 5px; }
-.profile-info p { font-style: italic; color: #6c757d; max-width: 400px; margin-bottom: 10px; }
-.btn-small { padding: 8px 16px; font-size: 0.8rem; }
-.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-.modal.visible { opacity: 1; pointer-events: auto; }
-.modal-content { background: white; padding: 25px; border-radius: 10px; width: 90%; max-width: 500px; text-align: center; transform: scale(0.95); transition: transform 0.3s ease; }
-.modal.visible .modal-content { transform: scale(1); }
-.modal-content h3 { margin-bottom: 15px; }
-.modal-content input, .modal-content textarea, .modal-content select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 15px; font-family: var(--font-family-body); }
-.profile-stats h3, .profile-achievements h3, .profile-settings h3 { text-align: center; margin-bottom: 20px; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; display: inline-block; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; text-align: center; }
-.stat-card { background-color: var(--gray-color); padding: 20px; border-radius: 10px; }
-.stat-card h4 { font-size: 0.9rem; color: #6c757d; margin-bottom: 5px; }
-.stat-card p { font-size: 2rem; font-weight: 700; color: var(--primary-color); }
-.achievements-grid { display: grid; grid-template-columns: 1fr; gap: 15px; max-height: 400px; overflow-y: auto; padding: 10px; }
-.achievement-badge { display: flex; align-items: center; background: linear-gradient(to right, #ffffff, #f1f8e9); border: 1px solid #e0e0e0; padding: 15px; border-radius: 10px; transition: transform 0.2s, box-shadow 0.2s; }
-.achievement-badge:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-.achievement-icon { font-size: 2.5rem; margin-right: 20px; filter: grayscale(0); }
-.achievement-badge.locked { filter: grayscale(1); background: var(--gray-color); }
-.achievement-badge.locked .achievement-info h4 { color: #999; }
-.achievement-badge.locked .achievement-info p { color: #aaa; }
-.achievement-info h4 { margin: 0; font-size: 1.1rem; }
-.achievement-info p { margin: 0; font-size: 0.9rem; color: #6c757d; }
-.settings-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-radius: 8px; background-color: var(--gray-color); }
-
-/* --- PAINEL DE ADMINISTRAÇÃO --- */
-#admin-panel { max-width: 900px; text-align: left;}
-#admin-panel .header a { font-size: 1rem; text-transform: none; letter-spacing: 0; color: var(--secondary-color); }
-#admin-panel h3 { border-left: 4px solid var(--accent-color); padding-left: 10px; margin-bottom: 1rem; }
-.admin-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 2rem; background: var(--gray-color); padding: 20px; border-radius: 8px; border: 1px solid #ddd; }
-.admin-form input, .admin-form select, .admin-form textarea { padding: 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem; font-family: var(--font-family-body); }
-.admin-form input[type="file"] { padding: 5px; }
-#admin-panel .btn { border-radius: 8px; text-transform: none; letter-spacing: 0; }
-.table-container { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; }
-#admin-panel table { width: 100%; border-collapse: collapse; }
-#admin-panel th, #admin-panel td { border-bottom: 1px solid #ddd; padding: 12px; text-align: left; }
-#admin-panel th { background-color: var(--primary-color); color: white; position: sticky; top: 0; z-index: 1; }
-#admin-panel tr:nth-child(even) { background-color: var(--gray-color); }
-#admin-panel .actions-cell { display: flex; gap: 5px; }
-#admin-panel .actions-cell .btn { padding: 8px 12px; font-size: 0.9rem; }
-
-/* --- PÁGINA DE GRUPO --- */
-.group-header { text-align: center; margin-bottom: 2rem; }
-.group-header .group-icon { font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem; }
-.group-header h2 { font-size: 2rem; color: var(--primary-color); }
-.group-header p { font-size: 1rem; color: #6c757d; }
-.ranking-table { width: 100%; border-collapse: collapse; }
-.ranking-table th, .ranking-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
-.ranking-table th { font-weight: 700; }
-.ranking-table .rank { width: 50px; text-align: center; font-weight: 700; font-size: 1.2rem; }
-.ranking-table .rank-1 { color: #ffd700; }
-.ranking-table .rank-2 { color: #c0c0c0; }
-.ranking-table .rank-3 { color: #cd7f32; }
-.ranking-table .member-info { display: flex; align-items: center; gap: 15px; justify-content: space-between; }
-.ranking-table .member-info img { width: 40px; height: 40px; border-radius: 50%; }
-.ranking-table .score { font-weight: 700; font-size: 1.2rem; text-align: right; }
-.group-actions { margin-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.icon-selection { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 15px; margin-top: 1rem; }
-.icon-selection i { font-size: 2.5rem; padding: 15px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: background-color 0.2s, transform 0.2s, border-color 0.2s; }
-.icon-selection i:hover { background-color: var(--gray-color); transform: scale(1.1); }
-.icon-selection i.selected { border-color: var(--accent-color); background-color: #fffde7; }
-.remove-member-btn { background: var(--danger-color); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background-color 0.2s, transform 0.2s; padding: 0; flex-shrink: 0; }
-.remove-member-btn:hover { background-color: #c62828; transform: scale(1.1); }
-.styled-select { appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233949ab' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; padding-right: 2.5rem; }
-
-/* --- SECÇÃO DE CHAT DO GRUPO --- */
-.group-chat { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e0e0e0; text-align: left; }
-.group-chat h3 { text-align: center; margin-bottom: 1rem; }
-.chat-messages { height: 300px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; background-color: var(--gray-color); }
-.chat-message { display: flex; flex-direction: column; }
-.message-sender { font-size: 0.8rem; font-weight: 600; color: #666; margin-bottom: 4px; }
-.message-bubble { max-width: 80%; padding: 10px 15px; border-radius: 18px; line-height: 1.5; }
-.chat-message:not(.my-message) .message-bubble { background-color: #e3f2fd; border-bottom-left-radius: 4px; }
-.chat-message.my-message { align-items: flex-end; }
-.chat-message.my-message .message-bubble { background-color: var(--primary-color); color: white; border-bottom-right-radius: 4px; }
-.chat-form { display: flex; gap: 10px; margin-top: 1rem; }
-#chat-input { flex-grow: 1; padding: 14px; border-radius: 50px; border: 1px solid #ccc; font-size: 1rem; }
-#chat-input:focus { outline: none; border-color: var(--primary-color); }
-.chat-form .btn { width: 50px; height: 50px; padding: 0; }
-
-/* --- PÁGINA DE RANKING (MODAL) --- */
-#ranking-modal .modal-content { max-width: 800px; }
-.ranking-header { text-align: center; margin-bottom: 2rem; }
-.table-wrapper { width: 100%; overflow-x: auto; }
-
-/* --- MEDIA QUERIES --- */
-@media (min-width: 768px) { 
-    .main-menu { grid-template-columns: 1fr 1fr; } 
-    .profile-header { flex-direction: row; text-align: left; } 
-    .stats-grid { grid-template-columns: repeat(4, 1fr); } 
-    .achievements-grid { grid-template-columns: 1fr 1fr; } 
-    .group-actions { flex-direction: row; justify-content: center; } 
+async function updateUiforGroupMode() {
+    const groupId = sessionStorage.getItem('currentGroupId');
+    if (groupPlayNotification && groupPlayName) {
+        if (groupId) {
+            try {
+                const groupRef = doc(db, 'grupos', groupId);
+                const groupDoc = await getDoc(groupRef);
+                if (groupDoc.exists()) {
+                    groupPlayName.textContent = groupDoc.data().nomeDoGrupo;
+                    groupPlayNotification.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("Erro ao buscar nome do grupo:", error);
+                groupPlayNotification.classList.add('hidden');
+            }
+        } else {
+            groupPlayNotification.classList.add('hidden');
+        }
+    }
 }
-@media (min-width: 992px) {
-    .main-menu { grid-template-columns: repeat(3, 1fr); }
+
+const provider = new GoogleAuthProvider();
+if (loginBtn) loginBtn.addEventListener('click', () => signInWithPopup(auth, provider).catch(console.error));
+if (logoutBtn) logoutBtn.addEventListener('click', (e) => { e.preventDefault(); signOut(auth).catch(console.error); });
+
+onAuthStateChanged(auth, async (user) => {
+    await updateUiforGroupMode();
+
+    if (user) {
+        currentUser = user;
+        if (loginBtn) loginBtn.classList.add('hidden');
+        if (userInfoDiv) userInfoDiv.classList.remove('hidden');
+        if (logoutBtn) logoutBtn.classList.remove('hidden');
+        if (mainMenu) mainMenu.classList.remove('hidden');
+        if (welcomeMessage) welcomeMessage.classList.add('hidden');
+        if (userNameSpan) userNameSpan.textContent = user.displayName || "Jogador";
+        if (userPhotoImg) userPhotoImg.src = user.photoURL || "https://placehold.co/45x45/e0e0e0/333?text=?";
+        if (profileLink) {
+            profileLink.href = `perfil.html?uid=${user.uid}`;
+            profileLink.classList.remove('hidden');
+        }
+        await saveUserToFirestore(user);
+        await checkAdminStatus(user.uid);
+        await loadUserGroups(user.uid);
+    } else {
+        currentUser = null;
+        if (loginBtn) loginBtn.classList.remove('hidden');
+        if (userInfoDiv) userInfoDiv.classList.add('hidden');
+        if (logoutBtn) logoutBtn.classList.add('hidden');
+        if (mainMenu) mainMenu.classList.add('hidden');
+        if (welcomeMessage) welcomeMessage.classList.remove('hidden');
+        if (adminLink) adminLink.classList.add('hidden');
+        if (profileLink) profileLink.classList.add('hidden');
+    }
+});
+
+async function saveUserToFirestore(user) {
+    const userRef = doc(db, 'usuarios', user.uid);
+    try {
+        const userDoc = await getDoc(userRef);
+        if (!userDoc.exists()) {
+            await setDoc(userRef, {
+                uid: user.uid,
+                nome: user.displayName || "Jogador Anônimo",
+                email: user.email,
+                fotoURL: user.photoURL || "https://placehold.co/150x150/e0e0e0/333?text=?",
+                admin: false,
+                bio: "Novo no Quiz Bíblico!",
+                showInRanking: true,
+                stats: { pontuacaoTotal: 0, quizzesJogados: 0, respostasCertas: 0, respostasErradas: 0 },
+                conquistas: []
+            });
+        } else {
+            const updateData = {};
+            if (user.displayName) updateData.nome = user.displayName;
+            if (user.photoURL) updateData.fotoURL = user.photoURL;
+            if (Object.keys(updateData).length > 0) {
+                await setDoc(userRef, updateData, { merge: true });
+            }
+        }
+    } catch (error) {
+        console.error("Erro ao salvar usuário no Firestore:", error);
+    }
 }
+async function checkAdminStatus(uid) {
+    if (!adminLink) return;
+    const userRef = doc(db, 'usuarios', uid);
+    const userDoc = await getDoc(userRef);
+    adminLink.classList.toggle('hidden', !(userDoc.exists() && userDoc.data().admin === true));
+}
+
+// --- Lógica de Grupos ---
+async function loadUserGroups(uid) {
+    if (!groupsList) return;
+    groupsList.innerHTML = '<p>A carregar...</p>';
+    const q = query(collection(db, "grupos"), where("memberUIDs", "array-contains", uid));
+    try {
+        const querySnapshot = await getDocs(q);
+        groupsList.innerHTML = '';
+        if (querySnapshot.empty) {
+            groupsList.innerHTML = '<p>Ainda não participa de nenhum grupo.</p>';
+        }
+        querySnapshot.forEach((doc) => {
+            const group = doc.data();
+            const groupElement = document.createElement('a');
+            groupElement.href = `grupo.html?id=${doc.id}`;
+            groupElement.className = 'group-item';
+            groupElement.innerHTML = `
+                <span><i class="${group.groupIcon || 'fas fa-users'}"></i> ${group.nomeDoGrupo}</span>
+                <span class="member-count">${group.memberUIDs.length} membros</span>
+            `;
+            groupsList.appendChild(groupElement);
+        });
+    } catch (error) {
+        console.error("Erro ao carregar grupos:", error);
+        groupsList.innerHTML = '<p>Não foi possível carregar os grupos.</p>';
+    }
+}
+if (createGroupBtn) createGroupBtn.addEventListener('click', () => createGroupModal.classList.add('visible'));
+if (cancelGroupBtn) cancelGroupBtn.addEventListener('click', () => createGroupModal.classList.remove('visible'));
+if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
+    const groupName = groupNameInput.value.trim();
+    if (groupName.length < 3) {
+        alert("O nome do grupo deve ter pelo menos 3 caracteres.");
+        return;
+    }
+    if (!currentUser) {
+        alert("Precisa de estar logado para criar um grupo.");
+        return;
+    }
+
+    saveGroupBtn.disabled = true;
+    saveGroupBtn.textContent = 'A criar...';
+
+    try {
+        const newGroup = {
+            nomeDoGrupo: groupName,
+            criadorUid: currentUser.uid,
+            criadorNome: currentUser.displayName,
+            dataCriacao: serverTimestamp(),
+            groupIcon: 'fas fa-book-bible',
+            memberUIDs: [currentUser.uid],
+            membros: {
+                [currentUser.uid]: {
+                    nome: currentUser.displayName,
+                    fotoURL: currentUser.photoURL,
+                    pontuacaoNoGrupo: 0
+                }
+            }
+        };
+        await addDoc(collection(db, "grupos"), newGroup);
+        alert(`Grupo "${groupName}" criado com sucesso!`);
+        groupNameInput.value = '';
+        createGroupModal.classList.remove('visible');
+        await loadUserGroups(currentUser.uid);
+    } catch (error) {
+        console.error("Erro ao criar grupo:", error);
+        alert("Não foi possível criar o grupo.");
+    } finally {
+        saveGroupBtn.disabled = false;
+        saveGroupBtn.textContent = 'Criar';
+    }
+});
+
+if (backToMenuBtn) backToMenuBtn.addEventListener('click', () => {
+    sessionStorage.removeItem('currentGroupId');
+    updateUiforGroupMode();
+});
+
+// --- Lógica do Ranking Geral ---
+if (rankingCard) rankingCard.addEventListener('click', async () => {
+    if (rankingModal) rankingModal.classList.add('visible');
+    await loadGeneralRanking();
+});
+if (closeRankingBtn) closeRankingBtn.addEventListener('click', () => {
+    if (rankingModal) rankingModal.classList.remove('visible');
+});
+
+async function loadGeneralRanking() {
+    if (!rankingTbody) return;
+    rankingTbody.innerHTML = '<tr><td colspan="3">A carregar ranking...</td></tr>';
+    try {
+        const q = query(
+            collection(db, "usuarios"), 
+            where("showInRanking", "==", true),
+            orderBy("stats.pontuacaoTotal", "desc"), 
+            limit(100)
+        );
+
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            rankingTbody.innerHTML = '<tr><td colspan="3">Nenhum jogador no ranking ainda.</td></tr>';
+            return;
+        }
+
+        rankingTbody.innerHTML = '';
+        let rank = 1;
+        querySnapshot.forEach((doc) => {
+            const user = doc.data();
+            const row = document.createElement('tr');
+            const rankClass = `rank-${rank}`;
+            
+            row.innerHTML = `
+                <td class="rank ${rankClass}">${rank}</td>
+                <td class="member-info">
+                    <a href="perfil.html?uid=${user.uid}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 15px;">
+                        <img src="${user.fotoURL || 'https://placehold.co/40x40'}" alt="Foto de ${user.nome}">
+                        <span>${user.nome}</span>
+                    </a>
+                </td>
+                <td class="score">${user.stats.pontuacaoTotal || 0}</td>
+            `;
+            rankingTbody.appendChild(row);
+            rank++;
+        });
+
+    } catch (error) {
+        console.error("Erro ao carregar o ranking geral:", error);
+        rankingTbody.innerHTML = '<tr><td colspan="3">Não foi possível carregar o ranking.</td></tr>';
+    }
+}
+
+// --- Lógica do Quiz ---
+if (difficultySelection) difficultySelection.addEventListener('click', (e) => {
+    if (e.target.matches('.btn[data-difficulty]')) {
+        startQuiz(e.target.dataset.difficulty);
+    }
+});
+
+async function startQuiz(difficulty) {
+    currentGroupId = sessionStorage.getItem('currentGroupId');
+    score = 0;
+    correctAnswersCount = 0;
+    currentQuestionIndex = 0;
+    if (nextBtn) nextBtn.classList.add('hidden');
+    if (progressBar) progressBar.style.width = '0%';
+
+    try {
+        const q = query(collection(db, "perguntas"), where("nivel", "==", difficulty));
+        const querySnapshot = await getDocs(q);
+        const allQuestions = [];
+        querySnapshot.forEach(doc => allQuestions.push({ id: doc.id, ...doc.data() }));
+        questions = allQuestions.sort(() => 0.5 - Math.random()).slice(0, 10);
+
+        if (questions.length > 0) {
+            switchScreen('quiz-screen');
+            displayQuestion();
+        } else {
+            alert("Não foram encontradas perguntas para esta dificuldade.");
+        }
+    } catch (error) {
+        console.error("Erro ao buscar perguntas: ", error);
+        alert("Ocorreu um erro ao carregar as perguntas.");
+    }
+}
+
+function displayQuestion() {
+    if (currentQuestionIndex >= questions.length) {
+        showResults();
+        return;
+    }
+    const progress = (currentQuestionIndex / questions.length) * 100;
+    if (progressBar) progressBar.style.width = `${progress}%`;
+
+    if (questionText) questionText.textContent = questions[currentQuestionIndex].enunciado;
+    if (optionsContainer) optionsContainer.innerHTML = '';
+    if (feedback) feedback.innerHTML = '';
+    if (reference) reference.innerHTML = '';
+    if (nextBtn) nextBtn.classList.add('hidden');
+
+    questions[currentQuestionIndex].alternativas.forEach((alt, index) => {
+        const button = document.createElement('button');
+        button.textContent = alt;
+        button.classList.add('btn', 'option-btn');
+        button.dataset.index = index;
+        button.addEventListener('click', handleAnswer);
+        if (optionsContainer) optionsContainer.appendChild(button);
+    });
+}
+function handleAnswer(e) {
+    Array.from(optionsContainer.children).forEach(btn => btn.disabled = true);
+    const selectedButton = e.target;
+    const selectedIndex = parseInt(selectedButton.dataset.index);
+    const question = questions[currentQuestionIndex];
+    const isCorrect = selectedIndex === question.correta;
+
+    if (isCorrect) {
+        selectedButton.classList.add('correct');
+        if (feedback) feedback.textContent = 'Resposta Correta!';
+        score += 10;
+        correctAnswersCount++;
+    } else {
+        selectedButton.classList.add('wrong');
+        if (feedback) feedback.textContent = 'Resposta Errada!';
+        optionsContainer.children[question.correta].classList.add('correct');
+    }
+    
+    if (reference) reference.textContent = `Referência: ${question.referencia}`;
+    if (nextBtn) nextBtn.classList.remove('hidden');
+    if (progressBar) progressBar.style.width = `${((currentQuestionIndex + 1) / questions.length) * 100}%`;
+}
+if (nextBtn) nextBtn.addEventListener('click', () => {
+    currentQuestionIndex++;
+    displayQuestion();
+});
+
+async function showResults() {
+    switchScreen('result-screen');
+    if (finalScore) finalScore.textContent = score;
+    const motivationalMessage = document.getElementById('motivational-message');
+    if (motivationalMessage) motivationalMessage.textContent = '"Combati o bom combate, acabei a carreira, guardei a fé." - 2 Timóteo 4:7';
+
+    if (!currentUser) return;
+    try {
+        const userRef = doc(db, 'usuarios', currentUser.uid);
+        const wrongAnswersCount = questions.length - correctAnswersCount;
+        
+        await updateDoc(userRef, {
+            "stats.pontuacaoTotal": increment(score),
+            "stats.quizzesJogados": increment(1),
+            "stats.respostasCertas": increment(correctAnswersCount),
+            "stats.respostasErradas": increment(wrongAnswersCount)
+        });
+
+        if (currentGroupId) {
+            const groupRef = doc(db, 'grupos', currentGroupId);
+            await updateDoc(groupRef, {
+                [`membros.${currentUser.uid}.pontuacaoNoGrupo`]: increment(score)
+            });
+        }
+
+        await checkAndAwardAchievements(userRef);
+    } catch (error) {
+        console.error("Erro ao atualizar estatísticas:", error);
+    }
+}
+
+async function checkAndAwardAchievements(userRef) {
+    const userDoc = await getDoc(userRef);
+    if (!userDoc.exists()) return;
+
+    const userData = userDoc.data();
+    const userAchievements = new Set(userData.conquistas || []);
+    let newAchievements = [];
+
+    const stats = userData.stats;
+    if (!userAchievements.has("iniciante_da_fe") && stats.quizzesJogados >= 1) newAchievements.push("iniciante_da_fe");
+    if (!userAchievements.has("erudito_aprendiz") && stats.pontuacaoTotal >= 1000) newAchievements.push("erudito_aprendiz");
+    if (!userAchievements.has("peregrino_fiel") && stats.quizzesJogados >= 10) newAchievements.push("peregrino_fiel");
+    if (!userAchievements.has("sabio_de_israel") && stats.pontuacaoTotal >= 5000) newAchievements.push("sabio_de_israel");
+    if (!userAchievements.has("mestre_da_palavra") && stats.respostasCertas >= 100) newAchievements.push("mestre_da_palavra");
+
+    if (newAchievements.length > 0) {
+        await updateDoc(userRef, { conquistas: arrayUnion(...newAchievements) });
+        setTimeout(() => {
+            alert(`Parabéns! Desbloqueou ${newAchievements.length} nova(s) conquista(s)!`);
+        }, 500);
+    }
+}
+if (restartBtn) restartBtn.addEventListener('click', () => {
+    sessionStorage.removeItem('currentGroupId');
+    updateUiforGroupMode();
+    switchScreen('initial-screen');
+});

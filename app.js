@@ -198,8 +198,8 @@ onAuthStateChanged(auth, async (user) => {
         } else {
             if (mainMenu) mainMenu.classList.remove('hidden');
             if (welcomeMessage) welcomeMessage.classList.add('hidden');
-            // A função loadUserGroups não está definida, então comentei para evitar o erro
-            // await loadUserGroups(user.uid); 
+            // CORREÇÃO: CHAMADA DA FUNÇÃO DE CARREGAR GRUPOS FOI REATIVADA
+            await loadUserGroups(user.uid); 
         }
     } else {
         currentUser = null;
@@ -221,7 +221,7 @@ async function saveUserToFirestore(user) {
             await setDoc(userRef, {
                 uid: user.uid,
                 nome: user.displayName || "Jogador Anônimo",
-                email: user.email || "", 
+                email: user.email || "",
                 fotoURL: user.photoURL || "https://placehold.co/150x150/e0e0e0/333?text=?",
                 admin: false,
                 bio: "Novo no Quiz Bíblico!",
@@ -279,6 +279,45 @@ if(saveDobBtn) {
     });
 }
 
+// CORREÇÃO: FUNÇÃO QUE ESTAVA FALTANDO FOI ADICIONADA
+async function loadUserGroups(userId) {
+    if (!groupsList) return;
+    groupsList.innerHTML = '<p>Carregando seus grupos...</p>';
+
+    try {
+        const q = query(collection(db, "grupos"), where("memberUIDs", "array-contains", userId));
+        const querySnapshot = await getDocs(q);
+        
+        groupsList.innerHTML = ''; // Limpa a lista antes de adicionar os grupos
+
+        if (querySnapshot.empty) {
+            groupsList.innerHTML = '<p style="text-align: center; color: #666;">Você ainda não faz parte de nenhum grupo.</p>';
+            return;
+        }
+
+        querySnapshot.forEach(doc => {
+            const group = doc.data();
+            const groupId = doc.id;
+            const groupElement = document.createElement('a');
+            groupElement.href = `grupo.html?id=${groupId}`;
+            groupElement.className = 'group-item';
+            
+            const memberCountText = group.memberUIDs.length === 1 ? '1 membro' : `${group.memberUIDs.length} membros`;
+
+            groupElement.innerHTML = `
+                <span><i class="${group.groupIcon || 'fas fa-users'}" style="margin-right: 8px;"></i> ${group.nomeDoGrupo}</span>
+                <span class="member-count">${memberCountText}</span>
+            `;
+            groupsList.appendChild(groupElement);
+        });
+
+    } catch (error) {
+        console.error("Erro ao carregar grupos do usuário:", error);
+        groupsList.innerHTML = '<p>Ocorreu um erro ao carregar os grupos.</p>';
+    }
+}
+
+
 async function awardAchievement(uid, achievementKey) {
     if (!uid || !achievementKey) return;
     const userRef = doc(db, 'usuarios', uid);
@@ -334,7 +373,7 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
         alert(`Grupo "${groupName}" criado com sucesso!`);
         groupNameInput.value = '';
         createGroupModal.classList.remove('visible');
-        // await loadUserGroups(currentUser.uid); // Função não definida
+        await loadUserGroups(currentUser.uid); // Atualiza a lista de grupos após criar um novo
     } catch (error) {
         console.error("Erro ao criar grupo:", error);
         alert("Não foi possível criar o grupo.");
@@ -620,7 +659,7 @@ if (createCompetitionBtn) createCompetitionBtn.addEventListener('click', async (
     try {
         const inviteCode = Math.random().toString(36).substring(2, 7).toUpperCase();
         
-        // LÓGICA DE BUSCA DE PERGUNTAS CORRIGIDA
+        // CORREÇÃO: LÓGICA DE BUSCA DE PERGUNTAS REESCRITA
         const primaryQuery = query(
             collection(db, "perguntas"),
             where("nivel", "==", difficulty),
@@ -646,7 +685,7 @@ if (createCompetitionBtn) createCompetitionBtn.addEventListener('click', async (
         }
 
         const competitionQuestions = allAvailableQuestions.sort(() => 0.5 - Math.random()).slice(0, numQuestions);
-        // FIM DA LÓGICA CORRIGIDA
+        // FIM DA LÓGICA REESCRITA
 
         const competitionRef = await addDoc(collection(db, "competicoes"), {
             codigoConvite: inviteCode,

@@ -170,3 +170,22 @@ body { font-family: var(--font-family-body); background: var(--gray-color); colo
 @media (min-width: 992px) {
     .main-menu { grid-template-columns: repeat(3, 1fr); }
 }
+/* --- PÁGINA DE GRUPO (ESTILOS ADICIONAIS) --- */
+.remove-member-btn { background: var(--danger-color); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background-color 0.2s, transform 0.2s; padding: 0; flex-shrink: 0; }
+.remove-member-btn:hover { background-color: #c62828; transform: scale(1.1); }
+.ranking-table .member-info { display: flex; align-items: center; gap: 15px; justify-content: space-between; }
+
+/* --- SECÇÃO DE CHAT DO GRUPO --- */
+.group-chat { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e0e0e0; text-align: left; }
+.group-chat h3 { text-align: center; margin-bottom: 1rem; }
+.chat-messages { height: 300px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; background-color: var(--gray-color); }
+.chat-message { display: flex; flex-direction: column; }
+.message-sender { font-size: 0.8rem; font-weight: 600; color: #666; margin-bottom: 4px; }
+.message-bubble { max-width: 80%; padding: 10px 15px; border-radius: 18px; line-height: 1.5; }
+.chat-message:not(.my-message) .message-bubble { background-color: #e3f2fd; border-bottom-left-radius: 4px; }
+.chat-message.my-message { align-items: flex-end; }
+.chat-message.my-message .message-bubble { background-color: var(--primary-color); color: white; border-bottom-right-radius: 4px; }
+.chat-form { display: flex; gap: 10px; margin-top: 1rem; }
+#chat-input { flex-grow: 1; padding: 14px; border-radius: 50px; border: 1px solid #ccc; font-size: 1rem; }
+#chat-input:focus { outline: none; border-color: var(--primary-color); }
+.chat-form .btn { width: 50px; height: 50px; padding: 0; }

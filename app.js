@@ -922,34 +922,26 @@ if(startCompetitionBtn) startCompetitionBtn.addEventListener('click', async () =
     const competitionRef = doc(db, 'competicoes', activeCompetitionId);
     await updateDoc(competitionRef, { estado: 'em_andamento' });
 });
-
 if(leaveWaitingRoomBtn) leaveWaitingRoomBtn.addEventListener('click', leaveWaitingRoom);
-
 async function leaveWaitingRoom() {
     const isCreator = startCompetitionBtn && !startCompetitionBtn.classList.contains('hidden');
 
     if(isCreator) {
+        // Se o criador sai, a sala é deletada
         if(confirm("Você é o criador da sala. Sair irá fechar a sala para todos. Deseja continuar?")) {
-            try {
-                const competitionRef = doc(db, 'competicoes', activeCompetitionId);
-                // O listener onSnapshot nos outros clientes cuidará de avisá-los
-                await deleteDoc(competitionRef);
-            } catch (error) {
-                console.error("Erro ao deletar a sala:", error);
-            }
+            const competitionRef = doc(db, 'competicoes', activeCompetitionId);
+            const batch = writeBatch(db);
+            batch.delete(competitionRef);
+            await batch.commit(); // A sala será fechada para todos via onSnapshot
         } else {
-            return; 
+            return; // O criador cancelou a saída
         }
     } else {
-        try {
-            const competitionRef = doc(db, 'competicoes', activeCompetitionId);
-            // CORREÇÃO: Usando deleteField para remover o participante do mapa.
-            await updateDoc(competitionRef, {
-                [`participantes.${currentUser.uid}`]: deleteField()
-            });
-        } catch (error) {
-             console.error("Erro ao sair da sala:", error)
-        }
+        // Se um participante normal sai, ele é removido da lista
+        const competitionRef = doc(db, 'competicoes', activeCompetitionId);
+        await updateDoc(competitionRef, {
+            [`participantes.${currentUser.uid}`]: null // Firestore não tem um 'delete field', então usamos null e filtramos
+        });
     }
 
     if (unsubscribeCompetition) unsubscribeCompetition();
@@ -958,3 +950,5 @@ async function leaveWaitingRoom() {
     activeCompetitionId = null;
     if(waitingRoomModal) waitingRoomModal.classList.remove('visible');
 }
+}
+o erro acontece após eu logar na conta, preciso de uma implementação que evite o uso de cache no site e um botão de atualizar nas páginas de grupos e competições.

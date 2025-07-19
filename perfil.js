@@ -1,6 +1,6 @@
 import { auth, db } from './firebase.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Elementos da UI ---
 const loadingDiv = document.getElementById('loading-profile');
@@ -29,7 +29,10 @@ const statScoreFacil = document.getElementById('stat-score-facil');
 const statScoreMedio = document.getElementById('stat-score-medio');
 const statScoreDificil = document.getElementById('stat-score-dificil');
 const bordersSection = document.getElementById('profile-borders-section');
-const bordersGrid = document.getElementById('borders-grid');
+const changeBorderBtn = document.getElementById('change-border-btn');
+const bordersModal = document.getElementById('borders-modal');
+const closeBordersModal = document.getElementById('close-borders-modal');
+const bordersGridModal = document.getElementById('borders-grid-modal');
 
 let currentUser = null;
 let profileUid = null;
@@ -86,9 +89,22 @@ window.addEventListener('DOMContentLoaded', () => {
     if (loadingDiv) loadingDiv.classList.remove('hidden');
     if (contentDiv) contentDiv.classList.add('hidden');
     if (notFoundDiv) notFoundDiv.classList.add('hidden');
+    
     onAuthStateChanged(auth, (user) => {
         currentUser = user;
         loadProfileData();
+    });
+
+    if(changeBorderBtn) changeBorderBtn.addEventListener('click', () => {
+        if(bordersModal) bordersModal.style.display = "block";
+    });
+    if(closeBordersModal) closeBordersModal.addEventListener('click', () => {
+        if(bordersModal) bordersModal.style.display = "none";
+    });
+    window.addEventListener('click', (event) => {
+        if (event.target == bordersModal) {
+            bordersModal.style.display = "none";
+        }
     });
 });
 
@@ -122,43 +138,58 @@ function displayProfileData(data) {
 
     const equippedBorder = data.bordaEquipada || 'default';
     if (profilePhotoContainer) {
-        profilePhotoContainer.className = 'profile-photo-container';
+        profilePhotoContainer.className = 'profile-photo-container'; // Reseta
         if (equippedBorder !== 'default') {
             profilePhotoContainer.classList.add(equippedBorder);
         }
     }
 
     if (isOwnProfile) {
-        if (showInRankingCheckbox) {
-            showInRankingCheckbox.checked = data.showInRanking !== false;
-        }
-        if (dobInput && data.dataDeNascimento) {
-            dobInput.value = data.dataDeNascimento;
-        }
-        if (bordersGrid) {
-            bordersGrid.innerHTML = '';
+        if (showInRankingCheckbox) showInRankingCheckbox.checked = data.showInRanking !== false;
+        if (dobInput && data.dataDeNascimento) dobInput.value = data.dataDeNascimento;
+        
+        // Carrega as bordas no modal
+        if (bordersGridModal) {
+            bordersGridModal.innerHTML = '';
             const unlockedBorders = new Set(data.bordasDesbloqueadas || []);
-            unlockedBorders.add('default');
+            unlockedBorders.add('default'); // Todas as bordas simples são padrão
             unlockedBorders.add('simples_azul');
             unlockedBorders.add('simples_verde');
             unlockedBorders.add('simples_roxo');
 
             Object.keys(allBorders).forEach(key => {
-                const border = allBorders[key];
                 if (unlockedBorders.has(key)) {
+                    const border = allBorders[key];
                     const borderElement = document.createElement('div');
                     borderElement.className = 'profile-photo-container';
                     borderElement.classList.add(key);
                     borderElement.dataset.borderKey = key;
                     borderElement.title = border.name;
+                    borderElement.style.width = '80px';
+                    borderElement.style.height = '80px';
                     borderElement.style.cursor = 'pointer';
-                    if (key === equippedBorder) {
-                        borderElement.style.outline = '3px solid var(--accent-color)';
-                    }
+
                     const img = document.createElement('img');
                     img.src = data.fotoURL || 'https://placehold.co/150x150/e0e0e0/333?text=?';
                     borderElement.appendChild(img);
-                    bordersGrid.appendChild(borderElement);
+                    
+                    if (key === equippedBorder) {
+                        borderElement.style.outline = '4px solid var(--accent-color)';
+                    }
+                    
+                    borderElement.addEventListener('click', async () => {
+                        try {
+                            const userRef = doc(db, 'usuarios', currentUser.uid);
+                            await updateDoc(userRef, { bordaEquipada: key });
+                            loadProfileData(); // Recarrega os dados do perfil para mostrar a nova borda
+                            if(bordersModal) bordersModal.style.display = "none";
+                        } catch(err) {
+                            console.error("Erro ao equipar borda:", err);
+                            alert("Não foi possível salvar sua escolha.");
+                        }
+                    });
+
+                    bordersGridModal.appendChild(borderElement);
                 }
             });
         }
@@ -198,6 +229,7 @@ function showNotFound() {
     if (notFoundDiv) notFoundDiv.classList.remove('hidden');
 }
 
+// ... (Restante do seu código para bio, data de nascimento, etc., sem alterações)
 if (editBioBtn) editBioBtn.addEventListener('click', () => {
     if (bioTextarea) bioTextarea.value = profileBio.textContent;
     if (editBioModal) editBioModal.classList.add('visible');
@@ -262,30 +294,3 @@ if (showInRankingCheckbox) showInRankingCheckbox.addEventListener('change', asyn
         alert("Não foi possível salvar sua preferência.");
     }
 });
-
-if (bordersGrid) {
-    bordersGrid.addEventListener('click', async (e) => {
-        const target = e.target.closest('.profile-photo-container');
-        if (target && currentUser) {
-            const borderKey = target.dataset.borderKey;
-            
-            bordersGrid.querySelectorAll('.profile-photo-container').forEach(el => el.style.outline = 'none');
-            target.style.outline = '3px solid var(--accent-color)';
-
-            try {
-                const userRef = doc(db, 'usuarios', currentUser.uid);
-                await updateDoc(userRef, { bordaEquipada: borderKey });
-                
-                if (profilePhotoContainer) {
-                    profilePhotoContainer.className = 'profile-photo-container';
-                    if (borderKey !== 'default') {
-                         profilePhotoContainer.classList.add(borderKey);
-                    }
-                }
-            } catch (error) {
-                console.error("Erro ao equipar borda:", error);
-                alert("Não foi possível equipar a borda.");
-            }
-        }
-    });
-}

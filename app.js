@@ -198,7 +198,8 @@ onAuthStateChanged(auth, async (user) => {
         } else {
             if (mainMenu) mainMenu.classList.remove('hidden');
             if (welcomeMessage) welcomeMessage.classList.add('hidden');
-            await loadUserGroups(user.uid);
+            // A função loadUserGroups não está definida, então comentei para evitar o erro
+            // await loadUserGroups(user.uid); 
         }
     } else {
         currentUser = null;
@@ -333,7 +334,7 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
         alert(`Grupo "${groupName}" criado com sucesso!`);
         groupNameInput.value = '';
         createGroupModal.classList.remove('visible');
-        await loadUserGroups(currentUser.uid);
+        // await loadUserGroups(currentUser.uid); // Função não definida
     } catch (error) {
         console.error("Erro ao criar grupo:", error);
         alert("Não foi possível criar o grupo.");
@@ -618,7 +619,10 @@ if (createCompetitionBtn) createCompetitionBtn.addEventListener('click', async (
 
     try {
         const inviteCode = Math.random().toString(36).substring(2, 7).toUpperCase();
-        const q = query(collection(db, "perguntas"), where("dificuldade", "==", difficulty), limit(numQuestions));
+        
+        // CORREÇÃO AQUI: O campo de dificuldade no Firestore é 'nivel', não 'dificuldade'.
+        const q = query(collection(db, "perguntas"), where("nivel", "==", difficulty), limit(numQuestions));
+        
         const questionsSnapshot = await getDocs(q);
         const competitionQuestions = questionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 

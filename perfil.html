@@ -40,9 +40,8 @@
             </section>
 
             <section id="profile-borders-section" class="profile-settings hidden">
-                <h3>Minhas Bordas</h3>
-                <div id="borders-grid" class="icon-selection" style="grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));">
-                    </div>
+                <h3>Personalizar Perfil</h3>
+                <button id="change-border-btn" class="btn btn-small">Mudar Borda da Foto</button>
             </section>
             
             <section id="profile-settings" class="profile-settings hidden">
@@ -66,6 +65,7 @@
             <a href="/index.html" class="btn">Voltar ao Início</a>
         </div>
     </div>
+    
     <div id="edit-bio-modal" class="modal">
         <div class="modal-content">
             <h3>Editar sua Biografia</h3>
@@ -74,6 +74,16 @@
             <button id="cancel-bio-btn" class="btn btn-secondary">Cancelar</button>
         </div>
     </div>
+
+    <div id="borders-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-borders-modal">&times;</span>
+            <h3>Escolha sua Borda</h3>
+            <div id="borders-grid-modal" class="icon-selection" style="grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));">
+                </div>
+        </div>
+    </div>
+
     <script type="module" src="perfil.js"></script>
 </body>
 </html>

@@ -41,8 +41,15 @@ const rankingTbody = document.getElementById('ranking-tbody');
 const closeRankingBtn = document.getElementById('close-ranking-btn');
 const leaveQuizBtn = document.getElementById('leave-quiz-btn');
 
-// --- Estado do Quiz ---
+// --- Elementos do Modal de Idade ---
+const dobModal = document.getElementById('dob-modal');
+const dobInput = document.getElementById('dob-input');
+const saveDobBtn = document.getElementById('save-dob-btn');
+
+
+// --- Estado do Quiz e Usuário ---
 let currentUser = null;
+let currentUserAgeGroup = "adulto"; // Padrão
 let questions = [];
 let currentQuestionIndex = 0;
 let score = 0;
@@ -67,6 +74,29 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- Funções ---
+
+// Função para determinar a faixa etária a partir da data de nascimento
+function getAgeGroup(birthDateString) {
+    if (!birthDateString) return "adulto"; // Padrão se não houver data
+
+    const birthDate = new Date(birthDateString);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+
+    if (age >= 6 && age <= 10) {
+        return "crianca";
+    } else if (age >= 11 && age <= 16) {
+        return "adolescente";
+    } else {
+        return "adulto";
+    }
+}
+
+
 function switchScreen(newScreenId) {
     document.querySelectorAll('.screen').forEach(screen => {
         if (screen && !screen.classList.contains('hidden')) {
@@ -105,6 +135,9 @@ if (loginBtn) loginBtn.addEventListener('click', () => signInWithPopup(auth, pro
 if (logoutBtn) logoutBtn.addEventListener('click', (e) => { e.preventDefault(); signOut(auth).catch(console.error); });
 
 onAuthStateChanged(auth, async (user) => {
+    // Limpa o tema anterior ao trocar de usuário ou fazer logout
+    document.body.classList.remove('tema-crianca');
+
     if (user) {
         currentUser = user;
         // Configuração básica da UI
@@ -118,19 +151,30 @@ onAuthStateChanged(auth, async (user) => {
             profileLink.classList.remove('hidden');
         }
         
-        await saveUserToFirestore(user);
+        const userDoc = await saveUserToFirestore(user);
         await checkAdminStatus(user.uid);
 
-        // CORREÇÃO APLICADA AQUI
+        // ---> LÓGICA DE TEMA E IDADE <---
+        if (userDoc.exists() && userDoc.data().dataDeNascimento) {
+            const birthDate = userDoc.data().dataDeNascimento;
+            currentUserAgeGroup = getAgeGroup(birthDate);
+
+            if (currentUserAgeGroup === "crianca") {
+                document.body.classList.add('tema-crianca');
+            }
+        } else {
+            // Se não tem data de nascimento, pede ao usuário.
+            if(dobModal) dobModal.classList.add('visible');
+        }
+        // ---> FIM DA LÓGICA DE TEMA E IDADE <---
+
         const groupIdFromSession = sessionStorage.getItem('currentGroupId');
         const groupDifficultyFromSession = sessionStorage.getItem('currentGroupDifficulty');
 
         if (groupIdFromSession && groupDifficultyFromSession) {
-            // Se estiver em modo de jogo em grupo, inicia o quiz diretamente
             await updateUiforGroupMode();
             startQuiz(groupDifficultyFromSession);
         } else {
-            // Se não, mostra o menu principal normalmente
             if (mainMenu) mainMenu.classList.remove('hidden');
             if (welcomeMessage) welcomeMessage.classList.add('hidden');
             await loadUserGroups(user.uid);
@@ -148,6 +192,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
+
 async function saveUserToFirestore(user) {
     const userRef = doc(db, 'usuarios', user.uid);
     try {
@@ -160,6 +205,7 @@ async function saveUserToFirestore(user) {
                 fotoURL: user.photoURL || "https://placehold.co/150x150/e0e0e0/333?text=?",
                 admin: false,
                 bio: "Novo no Quiz Bíblico!",
+                dataDeNascimento: null, // Campo novo
                 showInRanking: true,
                 stats: { pontuacaoTotal: 0, quizzesJogados: 0, respostasCertas: 0, respostasErradas: 0 },
                 conquistas: []
@@ -172,10 +218,12 @@ async function saveUserToFirestore(user) {
                 await setDoc(userRef, updateData, { merge: true });
             }
         }
+        return await getDoc(userRef); // Retorna o documento atualizado
     } catch (error) {
         console.error("Erro ao salvar usuário no Firestore:", error);
     }
 }
+
 async function checkAdminStatus(uid) {
     if (!adminLink) return;
     const userRef = doc(db, 'usuarios', uid);
@@ -183,7 +231,39 @@ async function checkAdminStatus(uid) {
     adminLink.classList.toggle('hidden', !(userDoc.exists() && userDoc.data().admin === true));
 }
 
-// --- Lógica de Grupos ---
+// --- Lógica do Modal de Data de Nascimento ---
+if(saveDobBtn) {
+    saveDobBtn.addEventListener('click', async () => {
+        const dobValue = dobInput.value;
+        if (!dobValue) {
+            alert("Por favor, selecione sua data de nascimento.");
+            return;
+        }
+
+        if (currentUser) {
+            try {
+                const userRef = doc(db, 'usuarios', currentUser.uid);
+                await updateDoc(userRef, { dataDeNascimento: dobValue });
+                
+                // Aplica o tema imediatamente
+                currentUserAgeGroup = getAgeGroup(dobValue);
+                if (currentUserAgeGroup === 'crianca') {
+                    document.body.classList.add('tema-crianca');
+                } else {
+                    document.body.classList.remove('tema-crianca');
+                }
+
+                if(dobModal) dobModal.classList.remove('visible');
+            } catch (error) {
+                console.error("Erro ao salvar data de nascimento: ", error);
+                alert("Não foi possível salvar a data. Tente novamente.");
+            }
+        }
+    });
+}
+
+
+// --- Lógica de Grupos (sem alterações) ---
 async function loadUserGroups(uid) {
     if (!groupsList) return;
     groupsList.innerHTML = '<p>A carregar...</p>';
@@ -259,14 +339,14 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
         saveGroupBtn.textContent = 'Criar';
     }
 });
-
 if (backToMenuBtn) backToMenuBtn.addEventListener('click', () => {
     sessionStorage.removeItem('currentGroupId');
     sessionStorage.removeItem('currentGroupDifficulty');
     updateUiforGroupMode();
 });
 
-// --- Lógica do Ranking Geral ---
+
+// --- Lógica do Ranking Geral (sem alterações) ---
 if (rankingCard) rankingCard.addEventListener('click', async () => {
     if (rankingModal) rankingModal.classList.add('visible');
     await loadGeneralRanking();
@@ -274,7 +354,6 @@ if (rankingCard) rankingCard.addEventListener('click', async () => {
 if (closeRankingBtn) closeRankingBtn.addEventListener('click', () => {
     if (rankingModal) rankingModal.classList.remove('visible');
 });
-
 async function loadGeneralRanking() {
     if (!rankingTbody) return;
     rankingTbody.innerHTML = '<tr><td colspan="3">A carregar ranking...</td></tr>';
@@ -327,6 +406,7 @@ if (difficultySelection) difficultySelection.addEventListener('click', (e) => {
     }
 });
 
+// FUNÇÃO ATUALIZADA para filtrar por faixa etária
 async function startQuiz(difficulty) {
     currentGroupId = sessionStorage.getItem('currentGroupId');
     score = 0;
@@ -336,17 +416,35 @@ async function startQuiz(difficulty) {
     if (progressBar) progressBar.style.width = '0%';
 
     try {
-        const q = query(collection(db, "perguntas"), where("nivel", "==", difficulty));
+        // Nova consulta com filtro de faixa etária
+        const q = query(
+            collection(db, "perguntas"), 
+            where("nivel", "==", difficulty),
+            where("faixaEtaria", "array-contains", currentUserAgeGroup)
+        );
         const querySnapshot = await getDocs(q);
         const allQuestions = [];
         querySnapshot.forEach(doc => allQuestions.push({ id: doc.id, ...doc.data() }));
+        
+        // Fallback: Se não encontrar perguntas para a faixa etária, busca em todas.
+        if (allQuestions.length < 10) {
+            console.warn(`Poucas perguntas para ${difficulty}/${currentUserAgeGroup}. Buscando em todas as faixas etárias.`);
+            const fallbackQuery = query(collection(db, "perguntas"), where("nivel", "==", difficulty));
+            const fallbackSnapshot = await getDocs(fallbackQuery);
+            fallbackSnapshot.forEach(doc => {
+                if (!allQuestions.find(q => q.id === doc.id)) {
+                    allQuestions.push({ id: doc.id, ...doc.data() });
+                }
+            });
+        }
+        
         questions = allQuestions.sort(() => 0.5 - Math.random()).slice(0, 10);
 
         if (questions.length > 0) {
             switchScreen('quiz-screen');
             displayQuestion();
         } else {
-            alert("Não foram encontradas perguntas para esta dificuldade.");
+            alert(`Não foram encontradas perguntas para a dificuldade ${difficulty}.`);
             switchScreen('initial-screen');
         }
     } catch (error) {
@@ -378,6 +476,7 @@ function displayQuestion() {
         if (optionsContainer) optionsContainer.appendChild(button);
     });
 }
+
 function handleAnswer(e) {
     Array.from(optionsContainer.children).forEach(btn => btn.disabled = true);
     const selectedButton = e.target;
@@ -400,6 +499,7 @@ function handleAnswer(e) {
     if (nextBtn) nextBtn.classList.remove('hidden');
     if (progressBar) progressBar.style.width = `${((currentQuestionIndex + 1) / questions.length) * 100}%`;
 }
+
 if (nextBtn) nextBtn.addEventListener('click', () => {
     currentQuestionIndex++;
     displayQuestion();
@@ -458,6 +558,7 @@ async function checkAndAwardAchievements(userRef) {
         }, 500);
     }
 }
+
 
 if (leaveQuizBtn) {
     leaveQuizBtn.addEventListener('click', () => {

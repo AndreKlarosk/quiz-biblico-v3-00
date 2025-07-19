@@ -198,7 +198,6 @@ onAuthStateChanged(auth, async (user) => {
         } else {
             if (mainMenu) mainMenu.classList.remove('hidden');
             if (welcomeMessage) welcomeMessage.classList.add('hidden');
-            // CORREÇÃO: CHAMADA DA FUNÇÃO DE CARREGAR GRUPOS FOI REATIVADA
             await loadUserGroups(user.uid); 
         }
     } else {
@@ -279,7 +278,6 @@ if(saveDobBtn) {
     });
 }
 
-// CORREÇÃO: FUNÇÃO QUE ESTAVA FALTANDO FOI ADICIONADA
 async function loadUserGroups(userId) {
     if (!groupsList) return;
     groupsList.innerHTML = '<p>Carregando seus grupos...</p>';
@@ -288,7 +286,7 @@ async function loadUserGroups(userId) {
         const q = query(collection(db, "grupos"), where("memberUIDs", "array-contains", userId));
         const querySnapshot = await getDocs(q);
         
-        groupsList.innerHTML = ''; // Limpa a lista antes de adicionar os grupos
+        groupsList.innerHTML = ''; 
 
         if (querySnapshot.empty) {
             groupsList.innerHTML = '<p style="text-align: center; color: #666;">Você ainda não faz parte de nenhum grupo.</p>';
@@ -373,7 +371,7 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
         alert(`Grupo "${groupName}" criado com sucesso!`);
         groupNameInput.value = '';
         createGroupModal.classList.remove('visible');
-        await loadUserGroups(currentUser.uid); // Atualiza a lista de grupos após criar um novo
+        await loadUserGroups(currentUser.uid);
     } catch (error) {
         console.error("Erro ao criar grupo:", error);
         alert("Não foi possível criar o grupo.");
@@ -659,7 +657,6 @@ if (createCompetitionBtn) createCompetitionBtn.addEventListener('click', async (
     try {
         const inviteCode = Math.random().toString(36).substring(2, 7).toUpperCase();
         
-        // CORREÇÃO: LÓGICA DE BUSCA DE PERGUNTAS REESCRITA
         const primaryQuery = query(
             collection(db, "perguntas"),
             where("nivel", "==", difficulty),
@@ -685,7 +682,6 @@ if (createCompetitionBtn) createCompetitionBtn.addEventListener('click', async (
         }
 
         const competitionQuestions = allAvailableQuestions.sort(() => 0.5 - Math.random()).slice(0, numQuestions);
-        // FIM DA LÓGICA REESCRITA
 
         const competitionRef = await addDoc(collection(db, "competicoes"), {
             codigoConvite: inviteCode,
@@ -785,10 +781,36 @@ function showWaitingRoom(isCreator) {
             if (unsubscribeCompetition) unsubscribeCompetition();
             if(waitingRoomModal) waitingRoomModal.classList.remove('visible');
             alert("A competição vai começar!");
-            // startCompetitionQuiz(data.perguntas); // A chamada para a função de quiz de competição iria aqui.
+            // CORREÇÃO: Chamada da função foi descomentada e ativada
+            startCompetitionQuiz(data.perguntas);
         }
     });
 }
+
+// FUNÇÃO ADICIONADA: Inicia o quiz da competição para todos os jogadores
+function startCompetitionQuiz(competitionQuestions) {
+    // Zera as variáveis do quiz
+    score = 0;
+    correctAnswersCount = 0;
+    currentQuestionIndex = 0;
+
+    // Define as perguntas do quiz como sendo as da competição
+    questions = competitionQuestions;
+
+    // Garante que a interface do quiz está pronta
+    if (nextBtn) nextBtn.classList.add('hidden');
+    if (progressBar) progressBar.style.width = '0%';
+
+    // Leva o jogador para a tela do quiz
+    if (questions.length > 0) {
+        switchScreen('quiz-screen');
+        displayQuestion();
+    } else {
+        alert("Erro: Nenhuma pergunta foi carregada para a competição.");
+        switchScreen('initial-screen');
+    }
+}
+
 if(startCompetitionBtn) startCompetitionBtn.addEventListener('click', async () => {
     if(!activeCompetitionId) return;
     const competitionRef = doc(db, 'competicoes', activeCompetitionId);

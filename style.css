@@ -289,8 +289,6 @@ body.tema-crianca .option-btn.wrong {
 .profile-photo-container.competicao_vencedor img {
   border: 3px solid white;
 }
-
-/* --- NOVAS BORDAS ADICIONADAS --- */
 .profile-photo-container.floral_verde {
     border-color: #27ae60;
     box-shadow: 0 0 15px #27ae60;
@@ -305,6 +303,36 @@ body.tema-crianca .option-btn.wrong {
 }
 .profile-photo-container.galhos_cinza {
     border: 4px dashed #7f8c8d;
+}
+
+/* --- BORDAS DE COMPETIÇÃO (POR RANK) --- */
+.profile-photo-container.borda_competicao_ouro {
+    padding: 4px;
+    background: linear-gradient(45deg, #FFD700, #FDB827, #FFD700);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
+}
+.profile-photo-container.borda_competicao_ouro img {
+    border: 3px solid #fff;
+}
+.profile-photo-container.borda_competicao_prata {
+    padding: 4px;
+    background: linear-gradient(45deg, #C0C0C0, #EAEAEA, #C0C0C0);
+    box-shadow: 0 0 15px rgba(192, 192, 192, 0.7);
+}
+.profile-photo-container.borda_competicao_prata img {
+    border: 3px solid #f0f0f0;
+}
+.profile-photo-container.borda_competicao_bronze {
+    padding: 4px;
+    background: linear-gradient(45deg, #CD7F32, #A0522D, #CD7F32);
+    box-shadow: 0 0 12px rgba(205, 127, 50, 0.7);
+}
+.profile-photo-container.borda_competicao_bronze img {
+    border: 3px solid #ffeedd;
+}
+.profile-photo-container.borda_competicao_honra {
+    border: 5px solid #4a148c;
+    box-shadow: 0 0 10px rgba(74, 20, 140, 0.5);
 }
 
 .header .user-info img {

@@ -289,6 +289,24 @@ body.tema-crianca .option-btn.wrong {
 .profile-photo-container.competicao_vencedor img {
   border: 3px solid white;
 }
+
+/* --- NOVAS BORDAS ADICIONADAS --- */
+.profile-photo-container.floral_verde {
+    border-color: #27ae60;
+    box-shadow: 0 0 15px #27ae60;
+}
+.profile-photo-container.geometrico_teal {
+    border: 5px double #16a085;
+    padding: 5px;
+}
+.profile-photo-container.folhas_violeta {
+    border-color: #8e44ad;
+    box-shadow: 0 0 15px #8e44ad;
+}
+.profile-photo-container.galhos_cinza {
+    border: 4px dashed #7f8c8d;
+}
+
 .header .user-info img {
     border: none;
 }

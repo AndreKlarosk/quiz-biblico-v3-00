@@ -88,7 +88,13 @@
         <div class="modal-content">
             <h3>Criar Novo Grupo</h3>
             <input type="text" id="group-name-input" placeholder="Nome do seu grupo" maxlength="50">
-            <button id="save-group-btn" class="btn">Criar</button>
+            <label for="group-difficulty-select" style="margin-top: 1rem; display: block;">Nível de Dificuldade Padrão</label>
+            <select id="group-difficulty-select">
+                <option value="facil">Fácil</option>
+                <option value="medio">Médio</option>
+                <option value="dificil">Difícil</option>
+            </select>
+            <button id="save-group-btn" class="btn" style="margin-top: 1rem;">Criar</button>
             <button id="cancel-group-btn" class="btn btn-secondary">Cancelar</button>
         </div>
     </div>

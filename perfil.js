@@ -28,6 +28,8 @@ const saveDobBtn = document.getElementById('save-dob-btn');
 const statScoreFacil = document.getElementById('stat-score-facil');
 const statScoreMedio = document.getElementById('stat-score-medio');
 const statScoreDificil = document.getElementById('stat-score-dificil');
+
+// Elementos da seção de Bordas
 const bordersSection = document.getElementById('profile-borders-section');
 const changeBorderBtn = document.getElementById('change-border-btn');
 const bordersModal = document.getElementById('borders-modal');
@@ -95,11 +97,12 @@ window.addEventListener('DOMContentLoaded', () => {
         loadProfileData();
     });
 
-    if(changeBorderBtn) changeBorderBtn.addEventListener('click', () => {
-        if(bordersModal) bordersModal.style.display = "block";
+    // Adiciona os event listeners para o modal de bordas
+    if (changeBorderBtn) changeBorderBtn.addEventListener('click', () => {
+        if (bordersModal) bordersModal.style.display = "block";
     });
-    if(closeBordersModal) closeBordersModal.addEventListener('click', () => {
-        if(bordersModal) bordersModal.style.display = "none";
+    if (closeBordersModal) closeBordersModal.addEventListener('click', () => {
+        if (bordersModal) bordersModal.style.display = "none";
     });
     window.addEventListener('click', (event) => {
         if (event.target == bordersModal) {
@@ -138,7 +141,7 @@ function displayProfileData(data) {
 
     const equippedBorder = data.bordaEquipada || 'default';
     if (profilePhotoContainer) {
-        profilePhotoContainer.className = 'profile-photo-container'; // Reseta
+        profilePhotoContainer.className = 'profile-photo-container';
         if (equippedBorder !== 'default') {
             profilePhotoContainer.classList.add(equippedBorder);
         }
@@ -148,11 +151,10 @@ function displayProfileData(data) {
         if (showInRankingCheckbox) showInRankingCheckbox.checked = data.showInRanking !== false;
         if (dobInput && data.dataDeNascimento) dobInput.value = data.dataDeNascimento;
         
-        // Carrega as bordas no modal
         if (bordersGridModal) {
             bordersGridModal.innerHTML = '';
             const unlockedBorders = new Set(data.bordasDesbloqueadas || []);
-            unlockedBorders.add('default'); // Todas as bordas simples são padrão
+            unlockedBorders.add('default');
             unlockedBorders.add('simples_azul');
             unlockedBorders.add('simples_verde');
             unlockedBorders.add('simples_roxo');
@@ -181,7 +183,7 @@ function displayProfileData(data) {
                         try {
                             const userRef = doc(db, 'usuarios', currentUser.uid);
                             await updateDoc(userRef, { bordaEquipada: key });
-                            loadProfileData(); // Recarrega os dados do perfil para mostrar a nova borda
+                            loadProfileData(); 
                             if(bordersModal) bordersModal.style.display = "none";
                         } catch(err) {
                             console.error("Erro ao equipar borda:", err);
@@ -229,7 +231,6 @@ function showNotFound() {
     if (notFoundDiv) notFoundDiv.classList.remove('hidden');
 }
 
-// ... (Restante do seu código para bio, data de nascimento, etc., sem alterações)
 if (editBioBtn) editBioBtn.addEventListener('click', () => {
     if (bioTextarea) bioTextarea.value = profileBio.textContent;
     if (editBioModal) editBioModal.classList.add('visible');

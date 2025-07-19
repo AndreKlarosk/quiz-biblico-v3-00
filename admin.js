@@ -22,6 +22,11 @@ const nivelSelect = document.getElementById('nivel');
 const temaInput = document.getElementById('tema');
 const referenciaInput = document.getElementById('referencia');
 
+// Checkboxes de Faixa Etária
+const faixaCriancaCheckbox = document.getElementById('faixa-crianca');
+const faixaAdolescenteCheckbox = document.getElementById('faixa-adolescente');
+const faixaAdultoCheckbox = document.getElementById('faixa-adulto');
+
 // Import/Export
 const exportBtn = document.getElementById('export-btn');
 const importBtn = document.getElementById('import-btn');
@@ -79,6 +84,17 @@ async function loadQuestions() {
 saveBtn.addEventListener('click', async () => {
     const questionId = questionIdInput.value;
     
+    // Constrói o array de faixa etária a partir dos checkboxes
+    const faixaEtaria = [];
+    if (faixaCriancaCheckbox.checked) faixaEtaria.push("crianca");
+    if (faixaAdolescenteCheckbox.checked) faixaEtaria.push("adolescente");
+    if (faixaAdultoCheckbox.checked) faixaEtaria.push("adulto");
+
+    if (faixaEtaria.length === 0) {
+        alert("Por favor, selecione pelo menos uma faixa etária.");
+        return;
+    }
+
     const questionData = {
         enunciado: enunciadoInput.value.trim(),
         alternativas: [
@@ -91,6 +107,7 @@ saveBtn.addEventListener('click', async () => {
         nivel: nivelSelect.value,
         tema: temaInput.value.trim().toLowerCase(),
         referencia: referenciaInput.value.trim(),
+        faixaEtaria: faixaEtaria, // Campo novo
         ultimaAtualizacao: serverTimestamp()
     };
 
@@ -135,6 +152,11 @@ questionsTbody.addEventListener('click', async (e) => {
             temaInput.value = data.tema;
             referenciaInput.value = data.referencia;
             
+            // Preenche os checkboxes de faixa etária
+            faixaCriancaCheckbox.checked = data.faixaEtaria?.includes("crianca") || false;
+            faixaAdolescenteCheckbox.checked = data.faixaEtaria?.includes("adolescente") || false;
+            faixaAdultoCheckbox.checked = data.faixaEtaria?.includes("adulto") || false;
+            
             saveBtn.textContent = 'Atualizar Pergunta';
             cancelBtn.classList.remove('hidden');
             window.scrollTo(0, 0);
@@ -170,11 +192,15 @@ function resetForm() {
     nivelSelect.value = 'facil';
     temaInput.value = '';
     referenciaInput.value = '';
+    // Limpa os checkboxes
+    faixaCriancaCheckbox.checked = false;
+    faixaAdolescenteCheckbox.checked = false;
+    faixaAdultoCheckbox.checked = true; // Padrão
     saveBtn.textContent = 'Salvar Pergunta';
     cancelBtn.classList.add('hidden');
 }
 
-// --- IMPORTAÇÃO E EXPORTAÇÃO ---
+// --- IMPORTAÇÃO E EXPORTAÇÃO (sem alterações, já lida com campos extras) ---
 
 // EXPORTAR
 exportBtn.addEventListener('click', async () => {
@@ -233,6 +259,10 @@ importBtn.addEventListener('click', () => {
 
             perguntas.forEach(pergunta => {
                 if (pergunta.enunciado && Array.isArray(pergunta.alternativas)) {
+                    // Garante que o campo faixaEtaria exista
+                    if (!pergunta.faixaEtaria || !Array.isArray(pergunta.faixaEtaria) || pergunta.faixaEtaria.length === 0) {
+                        pergunta.faixaEtaria = ["adolescente", "adulto"]; // Padrão
+                    }
                     const newQuestionRef = doc(perguntasCollection);
                     batch.set(newQuestionRef, {
                         ...pergunta,

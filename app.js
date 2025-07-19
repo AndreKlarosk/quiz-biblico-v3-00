@@ -292,12 +292,7 @@ async function loadGeneralRanking() {
 
     } catch (error) {
         console.error("Erro ao carregar o ranking geral:", error);
-        let errorMessage = 'Não foi possível carregar o ranking.';
-        // MELHORIA: Mensagem de erro específica para o problema do índice
-        if (error.code === 'failed-precondition') {
-            errorMessage = 'O ranking precisa de um índice no Firestore. Por favor, crie-o usando o link no console de erros do navegador.';
-        }
-        rankingTbody.innerHTML = `<tr><td colspan="3">${errorMessage}</td></tr>`;
+        rankingTbody.innerHTML = '<tr><td colspan="3">Não foi possível carregar o ranking.</td></tr>';
     }
 }
 

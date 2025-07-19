@@ -93,7 +93,9 @@ function displayGroupData() {
                 <td class="rank ${rankClass}">${index + 1}</td>
                 <td class="member-info">
                     <div style="display: flex; align-items: center; gap: 15px;">
-                        <img src="${member.fotoURL || 'https://placehold.co/40x40'}" alt="Foto de ${member.nome}">
+                        <div class="profile-photo-container" style="width: 40px; height: 40px; padding: 2px;">
+                            <img src="${member.fotoURL || 'https://placehold.co/40x40'}" alt="Foto de ${member.nome}" style="width: 100%; height: 100%;">
+                        </div>
                         <span>${member.nome}</span>
                     </div>
                     ${removeButtonHtml}
@@ -238,7 +240,6 @@ async function joinGroup() {
         joinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A entrar...';
     }
 
-    const groupRef = doc(db, 'grupos', groupId);
     const newMemberData = {
         uid: currentUser.uid,
         nome: currentUser.displayName || "Jogador Anônimo",
@@ -247,6 +248,10 @@ async function joinGroup() {
     };
 
     try {
+        const userRef = doc(db, 'usuarios', currentUser.uid);
+        await updateDoc(userRef, { conquistas: arrayUnion('socializador') });
+
+        const groupRef = doc(db, 'grupos', groupId);
         await updateDoc(groupRef, {
             [`membros.${currentUser.uid}`]: newMemberData,
             memberUIDs: arrayUnion(currentUser.uid)
@@ -340,7 +345,7 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
         alert("Não foi possível salvar as alterações.");
     } finally {
         saveGroupBtn.disabled = false;
-        saveGroupBtn.textContent = 'Salvar';
+        saveGroupBtn.textContent = 'Salvar Alterações';
     }
 });
 

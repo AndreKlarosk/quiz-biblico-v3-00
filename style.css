@@ -31,11 +31,10 @@ body { font-family: var(--font-family-body); background: var(--gray-color); colo
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #e0e0e0; }
 .header h1 { font-family: var(--font-family-headings); font-size: 2rem; color: var(--primary-color); font-weight: 700; }
 .user-info { display: flex; align-items: center; gap: 10px; }
-#user-photo-border { padding: 2px; }
-#user-photo { width: 45px; height: 45px; border-radius: 50%; }
+.user-info img { width: 45px; height: 45px; border-radius: 50%; }
 .user-details span { font-weight: 600; }
 .user-links { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.user-links a { text-decoration: none; font-weight: 600; font-size: 0.8rem; padding: 2px 6px; border-radius: 5px; transition: background-color 0.2s; }
+.user-links a { text-decoration: none; font-weight: 600; font-size: 0.8rem; padding: 2px 6px; border-radius: 5px; transition: background-color: 0.2s; }
 .user-links a#profile-link { color: var(--secondary-color); }
 .user-links a#profile-link:hover { background-color: #e3f2fd; }
 .user-links a#admin-link { color: var(--danger-color); }
@@ -60,7 +59,7 @@ body { font-family: var(--font-family-body); background: var(--gray-color); colo
 .menu-card h3 { font-size: 1.5rem; margin-bottom: 1rem; color: var(--primary-color); }
 .menu-card p { margin-bottom: 1.5rem; color: #666; }
 #groups-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; max-height: 200px; overflow-y: auto; padding-right: 10px; }
-.group-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #fff; border-radius: 8px; text-decoration: none; color: var(--dark-color); border: 1px solid #ddd; transition: background-color 0.2s; }
+.group-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #fff; border-radius: 8px; text-decoration: none; color: var(--dark-color); border: 1px solid #ddd; transition: background-color: 0.2s; }
 .group-item:hover { background-color: #eef5ff; }
 .group-item span { font-weight: 600; }
 .group-item .member-count { font-size: 0.9rem; color: #6c757d; }
@@ -101,7 +100,25 @@ body { font-family: var(--font-family-body); background: var(--gray-color); colo
 .close-button { position: absolute; top: 10px; right: 15px; font-size: 2rem; color: #aaa; cursor: pointer; line-height: 1; }
 .close-button:hover { color: var(--dark-color); }
 
-/* --- COMPETIÇÃO --- */
+/* --- PÁGINA DE GRUPO --- */
+.ranking-table { width: 100%; border-collapse: collapse; }
+.ranking-table th, .ranking-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+.ranking-table th { font-weight: 700; }
+.ranking-table .rank { width: 50px; text-align: center; font-weight: 700; font-size: 1.2rem; }
+.ranking-table .score { font-weight: 700; font-size: 1.2rem; text-align: right; }
+.ranking-header { text-align: center; margin-bottom: 2rem; }
+
+.styled-select { appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233949ab' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; padding-right: 2.5rem; }
+
+/* --- BORDAS DE PERFIL --- */
+.profile-photo-container { padding: 3px; border-radius: 50%; transition: all 0.3s ease; border: 4px solid transparent; }
+.profile-photo-container img { display: block; border-radius: 50%; }
+
+/* --- MEDIA QUERIES --- */
+@media (min-width: 768px) { .main-menu { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 992px) { .main-menu { grid-template-columns: repeat(3, 1fr); } }
+
+/* --- NOVOS ESTILOS PARA COMPETIÇÃO --- */
 .competition-actions { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem; }
 .join-action { display: flex; gap: 10px; }
 #join-code-input { flex-grow: 1; border-radius: 50px; padding: 0 20px; text-transform: uppercase; }
@@ -119,8 +136,6 @@ body { font-family: var(--font-family-body); background: var(--gray-color); colo
 .waiting-room-actions { margin-top: 1.5rem; display: flex; justify-content: space-between; width: 100%; }
 .competition-chat { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e0e0e0; text-align: left; }
 .competition-chat h4 { text-align: center; margin-bottom: 1rem; color: var(--dark-color); }
-
-/* --- CHAT (Reutilizado de grupo.js) --- */
 .chat-messages { height: 200px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; background-color: var(--gray-color); }
 .chat-message { display: flex; flex-direction: column; }
 .message-sender { font-size: 0.8rem; font-weight: 600; color: #666; margin-bottom: 4px; }
@@ -132,13 +147,3 @@ body { font-family: var(--font-family-body); background: var(--gray-color); colo
 .chat-form input { flex-grow: 1; padding: 14px; border-radius: 50px; border: 1px solid #ccc; font-size: 1rem; }
 .chat-form input:focus { outline: none; border-color: var(--primary-color); }
 .chat-form .btn { width: 50px; height: 50px; padding: 0; }
-
-.styled-select { appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233949ab' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; padding-right: 2.5rem; }
-
-/* --- MEDIA QUERIES --- */
-@media (min-width: 768px) { 
-    .main-menu { grid-template-columns: 1fr 1fr; } 
-}
-@media (min-width: 992px) {
-    .main-menu { grid-template-columns: repeat(3, 1fr); }
-}

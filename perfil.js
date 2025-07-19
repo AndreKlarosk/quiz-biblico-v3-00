@@ -118,7 +118,7 @@ function displayProfileData(data) {
     const isOwnProfile = currentUser && currentUser.uid === profileUid;
     if (editBioBtn) editBioBtn.classList.toggle('hidden', !isOwnProfile);
     if (settingsSection) settingsSection.classList.toggle('hidden', !isOwnProfile);
-    if(bordersSection) bordersSection.classList.toggle('hidden', !isOwnProfile);
+    if (bordersSection) bordersSection.classList.toggle('hidden', !isOwnProfile);
 
     const equippedBorder = data.bordaEquipada || 'default';
     if (profilePhotoContainer) {

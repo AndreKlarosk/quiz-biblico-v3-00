@@ -29,6 +29,7 @@ const groupsList = document.getElementById('groups-list');
 const createGroupBtn = document.getElementById('create-group-btn');
 const createGroupModal = document.getElementById('create-group-modal');
 const groupNameInput = document.getElementById('group-name-input');
+const groupDifficultySelect = document.getElementById('group-difficulty-select');
 const saveGroupBtn = document.getElementById('save-group-btn');
 const cancelGroupBtn = document.getElementById('cancel-group-btn');
 const groupPlayNotification = document.getElementById('group-play-notification');
@@ -51,8 +52,12 @@ let currentGroupId = null;
 document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const groupIdFromUrl = urlParams.get('groupId');
+    const difficultyFromUrl = urlParams.get('difficulty');
     if (groupIdFromUrl) {
         sessionStorage.setItem('currentGroupId', groupIdFromUrl);
+        if (difficultyFromUrl) {
+            sessionStorage.setItem('currentGroupDifficulty', difficultyFromUrl);
+        }
     }
     if (window.history.replaceState) {
         const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
@@ -117,6 +122,13 @@ onAuthStateChanged(auth, async (user) => {
         await saveUserToFirestore(user);
         await checkAdminStatus(user.uid);
         await loadUserGroups(user.uid);
+
+        const groupIdFromSession = sessionStorage.getItem('currentGroupId');
+        const groupDifficultyFromSession = sessionStorage.getItem('currentGroupDifficulty');
+        if (groupIdFromSession && groupDifficultyFromSession) {
+            startQuiz(groupDifficultyFromSession);
+        }
+
     } else {
         currentUser = null;
         if (loginBtn) loginBtn.classList.remove('hidden');
@@ -194,7 +206,9 @@ async function loadUserGroups(uid) {
 if (createGroupBtn) createGroupBtn.addEventListener('click', () => createGroupModal.classList.add('visible'));
 if (cancelGroupBtn) cancelGroupBtn.addEventListener('click', () => createGroupModal.classList.remove('visible'));
 if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
+    if (!groupNameInput || !groupDifficultySelect) return;
     const groupName = groupNameInput.value.trim();
+    const groupDifficulty = groupDifficultySelect.value;
     if (groupName.length < 3) {
         alert("O nome do grupo deve ter pelo menos 3 caracteres.");
         return;
@@ -210,6 +224,7 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
     try {
         const newGroup = {
             nomeDoGrupo: groupName,
+            difficulty: groupDifficulty,
             criadorUid: currentUser.uid,
             criadorNome: currentUser.displayName,
             dataCriacao: serverTimestamp(),
@@ -217,6 +232,7 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
             memberUIDs: [currentUser.uid],
             membros: {
                 [currentUser.uid]: {
+                    uid: currentUser.uid,
                     nome: currentUser.displayName,
                     fotoURL: currentUser.photoURL,
                     pontuacaoNoGrupo: 0
@@ -239,6 +255,7 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
 
 if (backToMenuBtn) backToMenuBtn.addEventListener('click', () => {
     sessionStorage.removeItem('currentGroupId');
+    sessionStorage.removeItem('currentGroupDifficulty');
     updateUiforGroupMode();
 });
 
@@ -323,6 +340,7 @@ async function startQuiz(difficulty) {
             displayQuestion();
         } else {
             alert("Não foram encontradas perguntas para esta dificuldade.");
+            switchScreen('initial-screen');
         }
     } catch (error) {
         console.error("Erro ao buscar perguntas: ", error);
@@ -435,6 +453,7 @@ async function checkAndAwardAchievements(userRef) {
 }
 if (restartBtn) restartBtn.addEventListener('click', () => {
     sessionStorage.removeItem('currentGroupId');
+    sessionStorage.removeItem('currentGroupDifficulty');
     updateUiforGroupMode();
     switchScreen('initial-screen');
 });

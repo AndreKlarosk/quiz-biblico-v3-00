@@ -97,16 +97,16 @@ window.addEventListener('DOMContentLoaded', () => {
         loadProfileData();
     });
 
-    // CORREÇÃO: Adiciona os event listeners para o modal de bordas
+    // CORREÇÃO: Adiciona os event listeners para o modal de bordas usando a classe 'visible'
     if (changeBorderBtn) changeBorderBtn.addEventListener('click', () => {
-        if (bordersModal) bordersModal.style.display = "block";
+        if (bordersModal) bordersModal.classList.add('visible');
     });
     if (closeBordersModal) closeBordersModal.addEventListener('click', () => {
-        if (bordersModal) bordersModal.style.display = "none";
+        if (bordersModal) bordersModal.classList.remove('visible');
     });
     window.addEventListener('click', (event) => {
         if (event.target == bordersModal) {
-            bordersModal.style.display = "none";
+            bordersModal.classList.remove('visible');
         }
     });
 });
@@ -183,8 +183,8 @@ function displayProfileData(data) {
                         try {
                             const userRef = doc(db, 'usuarios', currentUser.uid);
                             await updateDoc(userRef, { bordaEquipada: key });
+                            if(bordersModal) bordersModal.classList.remove('visible'); // Fecha o modal após a seleção
                             loadProfileData(); 
-                            if(bordersModal) bordersModal.style.display = "none";
                         } catch(err) {
                             console.error("Erro ao equipar borda:", err);
                             alert("Não foi possível salvar sua escolha.");

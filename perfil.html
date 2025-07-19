@@ -12,7 +12,9 @@
         <div id="profile-content" class="hidden">
             <a href="/index.html" class="btn btn-secondary back-link"><i class="fas fa-arrow-left"></i> Voltar</a>
             <header class="profile-header">
-                <img id="profile-photo" src="https://placehold.co/150x150/e0e0e0/333?text=?" alt="Foto do Perfil">
+                <div id="profile-photo-container" class="profile-photo-container">
+                    <img id="profile-photo" src="https://placehold.co/150x150/e0e0e0/333?text=?" alt="Foto do Perfil">
+                </div>
                 <div class="profile-info">
                     <h2 id="profile-name">Nome do Jogador</h2>
                     <p id="profile-bio">Carregando bio...</p>
@@ -36,6 +38,13 @@
                 <h3>Conquistas</h3>
                 <div id="achievements-grid" class="achievements-grid"></div>
             </section>
+
+            <section id="profile-borders-section" class="profile-settings hidden">
+                <h3>Minhas Bordas</h3>
+                <div id="borders-grid" class="icon-selection" style="grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));">
+                    </div>
+            </section>
+            
             <section id="profile-settings" class="profile-settings hidden">
                 <h3>Configurações</h3>
                 <div class="settings-item">

@@ -951,4 +951,3 @@ async function leaveWaitingRoom() {
     if(waitingRoomModal) waitingRoomModal.classList.remove('visible');
 }
 }
-o erro acontece após eu logar na conta, preciso de uma implementação que evite o uso de cache no site e um botão de atualizar nas páginas de grupos e competições.

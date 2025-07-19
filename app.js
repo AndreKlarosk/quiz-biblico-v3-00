@@ -1,11 +1,12 @@
 import { auth, db } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Elementos da UI ---
 const loginBtn = document.getElementById('login-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const userInfoDiv = document.getElementById('user-info');
+const userPhotoBorder = document.getElementById('user-photo-border');
 const userNameSpan = document.getElementById('user-name');
 const userPhotoImg = document.getElementById('user-photo');
 const adminLink = document.getElementById('admin-link');
@@ -50,6 +51,22 @@ const bibleBookSelect = document.getElementById('bible-book-select');
 const bibleChapterSelect = document.getElementById('bible-chapter-select');
 const loadChapterBtn = document.getElementById('load-chapter-btn');
 const bibleTextDisplay = document.getElementById('bible-text-display');
+const competitionCard = document.getElementById('competition-card');
+const competitionLobbyModal = document.getElementById('competition-lobby-modal');
+const closeLobbyBtn = document.getElementById('close-lobby-btn');
+const showCreateCompetitionBtn = document.getElementById('show-create-competition-btn');
+const joinCodeInput = document.getElementById('join-code-input');
+const joinCompetitionBtn = document.getElementById('join-competition-btn');
+const createCompetitionModal = document.getElementById('create-competition-modal');
+const competitionDifficultySelect = document.getElementById('competition-difficulty-select');
+const competitionQuestionsSelect = document.getElementById('competition-questions-select');
+const createCompetitionBtn = document.getElementById('create-competition-btn');
+const cancelCreateCompetitionBtn = document.getElementById('cancel-create-competition-btn');
+const waitingRoomModal = document.getElementById('waiting-room-modal');
+const inviteCodeDisplay = document.getElementById('invite-code-display');
+const playerList = document.getElementById('player-list');
+const startCompetitionBtn = document.getElementById('start-competition-btn');
+const leaveWaitingRoomBtn = document.getElementById('leave-waiting-room-btn');
 
 // --- Estado do Quiz e Usuário ---
 let currentUser = null;
@@ -60,6 +77,8 @@ let score = 0;
 let correctAnswersCount = 0;
 let currentGroupId = null;
 let quizAtualDifficulty = 'facil';
+let activeCompetitionId = null;
+let unsubscribeCompetition = null;
 
 // --- Dados da Bíblia ---
 const bibleBooks = {
@@ -138,6 +157,8 @@ if (logoutBtn) logoutBtn.addEventListener('click', (e) => { e.preventDefault(); 
 
 onAuthStateChanged(auth, async (user) => {
     document.body.classList.remove('tema-crianca');
+    if (userPhotoBorder) userPhotoBorder.className = 'profile-photo-container';
+
     if (user) {
         currentUser = user;
         if (loginBtn) loginBtn.classList.add('hidden');
@@ -152,9 +173,15 @@ onAuthStateChanged(auth, async (user) => {
         
         const userDoc = await saveUserToFirestore(user);
         await checkAdminStatus(user.uid);
+        
+        const userData = userDoc.data();
 
-        if (userDoc.exists() && userDoc.data().dataDeNascimento) {
-            const birthDate = userDoc.data().dataDeNascimento;
+        if (userData.bordaEquipada && userData.bordaEquipada !== 'default') {
+            if (userPhotoBorder) userPhotoBorder.classList.add(userData.bordaEquipada);
+        }
+
+        if (userData.dataDeNascimento) {
+            const birthDate = userData.dataDeNascimento;
             currentUserAgeGroup = getAgeGroup(birthDate);
             if (currentUserAgeGroup === "crianca") {
                 document.body.classList.add('tema-crianca');
@@ -200,7 +227,9 @@ async function saveUserToFirestore(user) {
                 dataDeNascimento: null,
                 showInRanking: true,
                 stats: { pontuacaoTotal: 0, quizzesJogadosTotal: 0, respostasCertasTotal: 0, respostasErradasTotal: 0 },
-                conquistas: []
+                conquistas: [],
+                bordasDesbloqueadas: ["default", "simples_azul", "simples_verde", "simples_roxo"],
+                bordaEquipada: "default"
             });
         } else {
             const updateData = {};
@@ -249,31 +278,6 @@ if(saveDobBtn) {
     });
 }
 
-async function loadUserGroups(uid) {
-    if (!groupsList) return;
-    groupsList.innerHTML = '<p>A carregar...</p>';
-    const q = query(collection(db, "grupos"), where("memberUIDs", "array-contains", uid));
-    try {
-        const querySnapshot = await getDocs(q);
-        groupsList.innerHTML = '';
-        if (querySnapshot.empty) {
-            groupsList.innerHTML = '<p>Ainda não participa de nenhum grupo.</p>';
-        }
-        querySnapshot.forEach((doc) => {
-            const group = doc.data();
-            const groupElement = document.createElement('a');
-            groupElement.href = `grupo.html?id=${doc.id}`;
-            groupElement.className = 'group-item';
-            groupElement.innerHTML = `<span><i class="${group.groupIcon || 'fas fa-users'}"></i> ${group.nomeDoGrupo}</span><span class="member-count">${group.memberUIDs.length} membros</span>`;
-            groupsList.appendChild(groupElement);
-        });
-    } catch (error) {
-        console.error("Erro ao carregar grupos:", error);
-        groupsList.innerHTML = '<p>Não foi possível carregar os grupos.</p>';
-    }
-}
-
-// Função auxiliar para conceder conquistas
 async function awardAchievement(uid, achievementKey) {
     if (!uid || !achievementKey) return;
     const userRef = doc(db, 'usuarios', uid);
@@ -283,7 +287,6 @@ async function awardAchievement(uid, achievementKey) {
             await updateDoc(userRef, {
                 conquistas: arrayUnion(achievementKey)
             });
-             // O alerta pode ser opcional para não incomodar o usuário a toda hora
             console.log(`Conquista '${achievementKey}' concedida!`);
         }
     } catch(error) {
@@ -308,12 +311,25 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
     saveGroupBtn.disabled = true;
     saveGroupBtn.textContent = 'A criar...';
     try {
-        // ... (código para criar o grupo)
+        const newGroup = {
+            nomeDoGrupo: groupName,
+            difficulty: groupDifficulty,
+            criadorUid: currentUser.uid,
+            criadorNome: currentUser.displayName,
+            dataCriacao: serverTimestamp(),
+            groupIcon: 'fas fa-book-bible',
+            memberUIDs: [currentUser.uid],
+            membros: {
+                [currentUser.uid]: {
+                    uid: currentUser.uid,
+                    nome: currentUser.displayName,
+                    fotoURL: currentUser.photoURL,
+                    pontuacaoNoGrupo: 0
+                }
+            }
+        };
         await addDoc(collection(db, "grupos"), newGroup);
-        
-        // Concede a conquista de fundador
         await awardAchievement(currentUser.uid, 'fundador_de_grupo');
-
         alert(`Grupo "${groupName}" criado com sucesso!`);
         groupNameInput.value = '';
         createGroupModal.classList.remove('visible');
@@ -335,9 +351,6 @@ if (backToMenuBtn) backToMenuBtn.addEventListener('click', () => {
 
 if (rankingCard) rankingCard.addEventListener('click', () => {
     window.location.href = 'ranking.html';
-});
-if (closeRankingBtn) closeRankingBtn.addEventListener('click', () => {
-    if (rankingModal) rankingModal.classList.remove('visible');
 });
 
 if (difficultySelection) difficultySelection.addEventListener('click', (e) => {
@@ -484,32 +497,23 @@ async function checkAndAwardAchievements(userRef, currentQuizScore, currentQuizC
     let newAchievements = [];
     const stats = userData.stats;
 
-    // Conquistas de Progressão
     if (!userAchievements.has("iniciante_da_fe") && (stats.quizzesJogadosTotal || 0) >= 1) newAchievements.push("iniciante_da_fe");
     if (!userAchievements.has("peregrino_fiel") && (stats.quizzesJogadosTotal || 0) >= 10) newAchievements.push("peregrino_fiel");
     if (!userAchievements.has("discipulo_dedicado") && (stats.quizzesJogadosTotal || 0) >= 50) newAchievements.push("discipulo_dedicado");
     if (!userAchievements.has("veterano_da_palavra") && (stats.quizzesJogadosTotal || 0) >= 100) newAchievements.push("veterano_da_palavra");
-
     if (!userAchievements.has("erudito_aprendiz") && (stats.pontuacaoTotal || 0) >= 1000) newAchievements.push("erudito_aprendiz");
     if (!userAchievements.has("sabio_de_israel") && (stats.pontuacaoTotal || 0) >= 5000) newAchievements.push("sabio_de_israel");
     if (!userAchievements.has("conselheiro_real") && (stats.pontuacaoTotal || 0) >= 10000) newAchievements.push("conselheiro_real");
     if (!userAchievements.has("patriarca_do_saber") && (stats.pontuacaoTotal || 0) >= 25000) newAchievements.push("patriarca_do_saber");
-
     if (!userAchievements.has("mestre_da_palavra") && (stats.respostasCertasTotal || 0) >= 100) newAchievements.push("mestre_da_palavra");
     if (!userAchievements.has("escriba_habil") && (stats.respostasCertasTotal || 0) >= 500) newAchievements.push("escriba_habil");
     if (!userAchievements.has("doutor_da_lei") && (stats.respostasCertasTotal || 0) >= 1000) newAchievements.push("doutor_da_lei");
-    
-    // Conquistas de Desempenho no Quiz
     if (!userAchievements.has("quase_la") && currentQuizScore >= 90) newAchievements.push("quase_la");
     if (!userAchievements.has("perfeccionista") && currentQuizScore >= 100) newAchievements.push("perfeccionista");
     if (!userAchievements.has("impecavel") && currentQuizCorrectAnswers === questions.length) newAchievements.push("impecavel");
-
-    // Conquistas por Dificuldade
     if (!userAchievements.has("explorador_facil") && (stats.pontuacaoFacil || 0) >= 1000) newAchievements.push("explorador_facil");
     if (!userAchievements.has("desafiante_medio") && (stats.pontuacaoMedio || 0) >= 1000) newAchievements.push("desafiante_medio");
     if (!userAchievements.has("estrategista_dificil") && (stats.pontuacaoDificil || 0) >= 1000) newAchievements.push("estrategista_dificil");
-    
-    // Conquistas Sociais (as que podem ser verificadas aqui)
     if (currentGroupId && !userAchievements.has("competidor")) newAchievements.push("competidor");
 
     if (newAchievements.length > 0) {
@@ -544,6 +548,7 @@ if (restartBtn) restartBtn.addEventListener('click', () => {
 
 function populateBookSelect() {
     if (!bibleBookSelect) return;
+    bibleBookSelect.innerHTML = '';
     for (const book in bibleBooks) {
         const option = document.createElement('option');
         option.value = book;
@@ -588,3 +593,149 @@ if (bibleCard) bibleCard.addEventListener('click', () => { if (bibleModal) bible
 if (closeBibleBtn) closeBibleBtn.addEventListener('click', () => { if (bibleModal) bibleModal.classList.remove('visible'); });
 if (bibleBookSelect) bibleBookSelect.addEventListener('change', populateChapterSelect);
 if (loadChapterBtn) loadChapterBtn.addEventListener('click', loadChapterText);
+
+// --- Lógica da Competição ---
+if (competitionCard) competitionCard.addEventListener('click', () => {
+    if(competitionLobbyModal) competitionLobbyModal.classList.add('visible');
+});
+if (closeLobbyBtn) closeLobbyBtn.addEventListener('click', () => {
+    if(competitionLobbyModal) competitionLobbyModal.classList.remove('visible');
+});
+if (showCreateCompetitionBtn) showCreateCompetitionBtn.addEventListener('click', () => {
+    if(createCompetitionModal) createCompetitionModal.classList.add('visible');
+});
+if (cancelCreateCompetitionBtn) cancelCreateCompetitionBtn.addEventListener('click', () => {
+    if(createCompetitionModal) createCompetitionModal.classList.remove('visible');
+});
+if (createCompetitionBtn) createCompetitionBtn.addEventListener('click', async () => {
+    if (!currentUser) return alert("Você precisa estar logado.");
+    
+    const difficulty = competitionDifficultySelect.value;
+    const numQuestions = parseInt(competitionQuestionsSelect.value);
+    
+    createCompetitionBtn.disabled = true;
+    createCompetitionBtn.textContent = "Criando...";
+
+    try {
+        const inviteCode = Math.random().toString(36).substring(2, 7).toUpperCase();
+        const q = query(collection(db, "perguntas"), where("dificuldade", "==", difficulty), limit(numQuestions));
+        const questionsSnapshot = await getDocs(q);
+        const competitionQuestions = questionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        if (competitionQuestions.length < numQuestions) {
+            throw new Error("Não há perguntas suficientes para esta configuração.");
+        }
+
+        const competitionRef = await addDoc(collection(db, "competicoes"), {
+            codigoConvite: inviteCode,
+            criadorUid: currentUser.uid,
+            estado: "aguardando",
+            dificuldade: difficulty,
+            numPerguntas: numQuestions,
+            perguntas: competitionQuestions,
+            participantes: {
+                [currentUser.uid]: {
+                    nome: currentUser.displayName,
+                    fotoURL: currentUser.photoURL,
+                    pontuacao: 0,
+                    respostas: []
+                }
+            },
+            dataCriacao: serverTimestamp()
+        });
+        activeCompetitionId = competitionRef.id;
+        showWaitingRoom(true);
+
+    } catch (error) {
+        console.error("Erro ao criar competição:", error);
+        alert(error.message);
+    } finally {
+        createCompetitionBtn.disabled = false;
+        createCompetitionBtn.textContent = "Criar Sala";
+        if(createCompetitionModal) createCompetitionModal.classList.remove('visible');
+        if(competitionLobbyModal) competitionLobbyModal.classList.remove('visible');
+    }
+});
+if (joinCompetitionBtn) joinCompetitionBtn.addEventListener('click', async () => {
+    if (!currentUser) return alert("Você precisa estar logado.");
+    
+    const code = joinCodeInput.value.trim().toUpperCase();
+    if (code.length < 5) return alert("Código inválido.");
+
+    joinCompetitionBtn.disabled = true;
+    joinCompetitionBtn.textContent = "...";
+
+    try {
+        const q = query(collection(db, "competicoes"), where("codigoConvite", "==", code), where("estado", "==", "aguardando"));
+        const competitionSnapshot = await getDocs(q);
+
+        if (competitionSnapshot.empty) {
+            throw new Error("Sala não encontrada ou já iniciada.");
+        }
+
+        const competitionDoc = competitionSnapshot.docs[0];
+        const competitionRef = doc(db, 'competicoes', competitionDoc.id);
+
+        await updateDoc(competitionRef, {
+            [`participantes.${currentUser.uid}`]: {
+                nome: currentUser.displayName,
+                fotoURL: currentUser.photoURL,
+                pontuacao: 0,
+                respostas: []
+            }
+        });
+        activeCompetitionId = competitionDoc.id;
+        showWaitingRoom(false);
+
+    } catch (error) {
+        console.error("Erro ao entrar na competição:", error);
+        alert(error.message);
+    } finally {
+        joinCompetitionBtn.disabled = false;
+        joinCompetitionBtn.textContent = "Entrar";
+        joinCodeInput.value = '';
+        if(competitionLobbyModal) competitionLobbyModal.classList.remove('visible');
+    }
+});
+function showWaitingRoom(isCreator) {
+    if(waitingRoomModal) waitingRoomModal.classList.add('visible');
+    if(startCompetitionBtn) startCompetitionBtn.classList.toggle('hidden', !isCreator);
+
+    if (unsubscribeCompetition) unsubscribeCompetition();
+
+    unsubscribeCompetition = onSnapshot(doc(db, 'competicoes', activeCompetitionId), (doc) => {
+        if (!doc.exists()) {
+            alert("A sala de competição foi fechada pelo criador.");
+            leaveWaitingRoom();
+            return;
+        }
+
+        const data = doc.data();
+        inviteCodeDisplay.textContent = data.codigoConvite;
+        
+        playerList.innerHTML = '';
+        Object.values(data.participantes).forEach(player => {
+            const li = document.createElement('li');
+            li.textContent = player.nome;
+            playerList.appendChild(li);
+        });
+
+        if (data.estado === 'em_andamento') {
+            if (unsubscribeCompetition) unsubscribeCompetition();
+            if(waitingRoomModal) waitingRoomModal.classList.remove('visible');
+            alert("A competição vai começar!");
+            // startCompetitionQuiz(data.perguntas); // A chamada para a função de quiz de competição iria aqui.
+        }
+    });
+}
+if(startCompetitionBtn) startCompetitionBtn.addEventListener('click', async () => {
+    if(!activeCompetitionId) return;
+    const competitionRef = doc(db, 'competicoes', activeCompetitionId);
+    await updateDoc(competitionRef, { estado: 'em_andamento' });
+});
+if(leaveWaitingRoomBtn) leaveWaitingRoomBtn.addEventListener('click', leaveWaitingRoom);
+async function leaveWaitingRoom() {
+    if (unsubscribeCompetition) unsubscribeCompetition();
+    activeCompetitionId = null;
+    if(waitingRoomModal) waitingRoomModal.classList.remove('visible');
+}

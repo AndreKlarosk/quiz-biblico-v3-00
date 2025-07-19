@@ -5,7 +5,7 @@ const rankingTbody = document.getElementById('ranking-tbody');
 const rankingTabs = document.querySelector('.ranking-tabs');
 const scoreHeader = document.getElementById('ranking-score-header');
 
-let currentRanking = 'Total'; // Padrão
+let currentRanking = 'Total';
 
 window.addEventListener('DOMContentLoaded', async () => {
     await loadRanking();
@@ -46,13 +46,16 @@ async function loadRanking() {
         querySnapshot.forEach((doc) => {
             const user = doc.data();
             const score = user.stats[`pontuacao${currentRanking}`] || 0;
+            const equippedBorder = user.bordaEquipada || 'default';
             const row = document.createElement('tr');
             
             row.innerHTML = `
                 <td class="rank rank-${rank}">${rank}</td>
                 <td class="member-info">
-                    <a href="perfil.html?uid=${user.uid}" style="text-decoration: none; color: inherit; display: flex; align-items-center; gap: 15px;">
-                        <img src="${user.fotoURL || 'https://placehold.co/40x40'}" alt="Foto de ${user.nome}">
+                    <a href="perfil.html?uid=${user.uid}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 15px;">
+                        <div class="profile-photo-container ${equippedBorder}" style="width: 40px; height: 40px; padding: 2px;">
+                            <img src="${user.fotoURL || 'https://placehold.co/40x40'}" alt="Foto de ${user.nome}" style="width: 100%; height: 100%;">
+                        </div>
                         <span>${user.nome}</span>
                     </a>
                 </td>

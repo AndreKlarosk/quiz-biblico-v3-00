@@ -53,12 +53,13 @@ const bibleTextDisplay = document.getElementById('bible-text-display');
 
 // --- Estado do Quiz e Usuário ---
 let currentUser = null;
-let currentUserAgeGroup = "adulto"; // Padrão
+let currentUserAgeGroup = "adulto";
 let questions = [];
 let currentQuestionIndex = 0;
 let score = 0;
 let correctAnswersCount = 0;
 let currentGroupId = null;
+let quizAtualDifficulty = 'facil'; // Guarda a dificuldade do quiz atual
 
 // --- Dados da Bíblia ---
 const bibleBooks = {
@@ -198,7 +199,7 @@ async function saveUserToFirestore(user) {
                 bio: "Novo no Quiz Bíblico!",
                 dataDeNascimento: null,
                 showInRanking: true,
-                stats: { pontuacaoTotal: 0, quizzesJogados: 0, respostasCertas: 0, respostasErradas: 0 },
+                stats: { pontuacaoTotal: 0, quizzesJogadosTotal: 0, respostasCertasTotal: 0, respostasErradasTotal: 0 },
                 conquistas: []
             });
         } else {
@@ -324,13 +325,16 @@ if (backToMenuBtn) backToMenuBtn.addEventListener('click', () => {
     updateUiforGroupMode();
 });
 
-if (rankingCard) rankingCard.addEventListener('click', async () => {
-    if (rankingModal) rankingModal.classList.add('visible');
-    await loadGeneralRanking();
+if (rankingCard) rankingCard.addEventListener('click', () => {
+    // A lógica de carregamento do ranking foi movida para ranking.js
+    // Apenas redireciona para a página de ranking
+    window.location.href = 'ranking.html';
 });
+
 if (closeRankingBtn) closeRankingBtn.addEventListener('click', () => {
     if (rankingModal) rankingModal.classList.remove('visible');
 });
+
 async function loadGeneralRanking() {
     if (!rankingTbody) return;
     rankingTbody.innerHTML = '<tr><td colspan="3">A carregar ranking...</td></tr>';
@@ -368,6 +372,7 @@ if (difficultySelection) difficultySelection.addEventListener('click', (e) => {
 });
 
 async function startQuiz(difficulty) {
+    quizAtualDifficulty = difficulty; // Armazena a dificuldade
     currentGroupId = sessionStorage.getItem('currentGroupId');
     score = 0;
     correctAnswersCount = 0;
@@ -466,12 +471,24 @@ async function showResults() {
     try {
         const userRef = doc(db, 'usuarios', currentUser.uid);
         const wrongAnswersCount = questions.length - correctAnswersCount;
-        await updateDoc(userRef, {
-            "stats.pontuacaoTotal": increment(score),
-            "stats.quizzesJogados": increment(1),
-            "stats.respostasCertas": increment(correctAnswersCount),
-            "stats.respostasErradas": increment(wrongAnswersCount)
-        });
+        
+        const updates = {};
+        const pontuacaoFieldName = `pontuacao${quizAtualDifficulty.charAt(0).toUpperCase() + quizAtualDifficulty.slice(1)}`;
+        const quizzesJogadosFieldName = `quizzesJogados${quizAtualDifficulty.charAt(0).toUpperCase() + quizAtualDifficulty.slice(1)}`;
+        const respostasCertasFieldName = `respostasCertas${quizAtualDifficulty.charAt(0).toUpperCase() + quizAtualDifficulty.slice(1)}`;
+        const respostasErradasFieldName = `respostasErradas${quizAtualDifficulty.charAt(0).toUpperCase() + quizAtualDifficulty.slice(1)}`;
+
+        updates["stats.pontuacaoTotal"] = increment(score);
+        updates["stats.quizzesJogadosTotal"] = increment(1);
+        updates["stats.respostasCertasTotal"] = increment(correctAnswersCount);
+        updates["stats.respostasErradasTotal"] = increment(wrongAnswersCount);
+        updates[`stats.${pontuacaoFieldName}`] = increment(score);
+        updates[`stats.${quizzesJogadosFieldName}`] = increment(1);
+        updates[`stats.${respostasCertasFieldName}`] = increment(correctAnswersCount);
+        updates[`stats.${respostasErradasFieldName}`] = increment(wrongAnswersCount);
+
+        await updateDoc(userRef, updates);
+
         if (currentGroupId) {
             const groupRef = doc(db, 'grupos', currentGroupId);
             await updateDoc(groupRef, {
@@ -491,11 +508,11 @@ async function checkAndAwardAchievements(userRef) {
     const userAchievements = new Set(userData.conquistas || []);
     let newAchievements = [];
     const stats = userData.stats;
-    if (!userAchievements.has("iniciante_da_fe") && stats.quizzesJogados >= 1) newAchievements.push("iniciante_da_fe");
+    if (!userAchievements.has("iniciante_da_fe") && stats.quizzesJogadosTotal >= 1) newAchievements.push("iniciante_da_fe");
     if (!userAchievements.has("erudito_aprendiz") && stats.pontuacaoTotal >= 1000) newAchievements.push("erudito_aprendiz");
-    if (!userAchievements.has("peregrino_fiel") && stats.quizzesJogados >= 10) newAchievements.push("peregrino_fiel");
+    if (!userAchievements.has("peregrino_fiel") && stats.quizzesJogadosTotal >= 10) newAchievements.push("peregrino_fiel");
     if (!userAchievements.has("sabio_de_israel") && stats.pontuacaoTotal >= 5000) newAchievements.push("sabio_de_israel");
-    if (!userAchievements.has("mestre_da_palavra") && stats.respostasCertas >= 100) newAchievements.push("mestre_da_palavra");
+    if (!userAchievements.has("mestre_da_palavra") && stats.respostasCertasTotal >= 100) newAchievements.push("mestre_da_palavra");
     if (newAchievements.length > 0) {
         await updateDoc(userRef, { conquistas: arrayUnion(...newAchievements) });
         setTimeout(() => {
@@ -526,7 +543,6 @@ if (restartBtn) restartBtn.addEventListener('click', () => {
     if (welcomeMessage) welcomeMessage.classList.add('hidden');
 });
 
-// --- Lógica da Bíblia ---
 function populateBookSelect() {
     if (!bibleBookSelect) return;
     for (const book in bibleBooks) {

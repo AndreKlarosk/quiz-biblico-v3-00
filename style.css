@@ -21,7 +21,7 @@
 body { font-family: var(--font-family-body); background: var(--gray-color); color: var(--dark-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 1rem; }
 
 /* --- CONTAINER E TELAS --- */
-.container { background-color: var(--light-color); padding: 2rem 2.5rem; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); width: 100%; max-width: 700px; text-align: center; border: 1px solid #e0e0e0; }
+.container { background-color: var(--light-color); padding: 2rem 2.5rem; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); width: 100%; max-width: 992px; text-align: center; border: 1px solid #e0e0e0; }
 .screen { transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; }
 .screen.hidden { position: absolute; opacity: 0; transform: scale(0.95); pointer-events: none; }
 .hidden { display: none !important; }
@@ -143,7 +143,7 @@ body { font-family: var(--font-family-body); background: var(--gray-color); colo
 .ranking-table .rank-1 { color: #ffd700; }
 .ranking-table .rank-2 { color: #c0c0c0; }
 .ranking-table .rank-3 { color: #cd7f32; }
-.ranking-table .member-info { display: flex; align-items: center; gap: 15px; }
+.ranking-table .member-info { display: flex; align-items: center; gap: 15px; justify-content: space-between; }
 .ranking-table .member-info img { width: 40px; height: 40px; border-radius: 50%; }
 .ranking-table .score { font-weight: 700; font-size: 1.2rem; text-align: right; }
 .group-actions { margin-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -151,10 +151,22 @@ body { font-family: var(--font-family-body); background: var(--gray-color); colo
 .icon-selection i { font-size: 2.5rem; padding: 15px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: background-color 0.2s, transform 0.2s, border-color 0.2s; }
 .icon-selection i:hover { background-color: var(--gray-color); transform: scale(1.1); }
 .icon-selection i.selected { border-color: var(--accent-color); background-color: #fffde7; }
+.remove-member-btn { background: var(--danger-color); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background-color 0.2s, transform 0.2s; padding: 0; flex-shrink: 0; }
+.remove-member-btn:hover { background-color: #c62828; transform: scale(1.1); }
 
 /* --- PÁGINA DE RANKING (MODAL) --- */
 #ranking-modal .modal-content { max-width: 800px; }
 .ranking-header { text-align: center; margin-bottom: 2rem; }
 .table-wrapper { width: 100%; overflow-x: auto; }
 
-@media (min-width: 768px) { .main-menu { grid-template-columns: repeat(3, 1fr); } .profile-header { flex-direction: row; text-align: left; } .stats-grid { grid-template-columns: repeat(4, 1fr); } .achievements-grid { grid-template-columns: 1fr 1fr; } .group-actions { flex-direction: row; justify-content: center; } }
+/* --- MEDIA QUERIES --- */
+@media (min-width: 768px) { 
+    .main-menu { grid-template-columns: 1fr 1fr; } 
+    .profile-header { flex-direction: row; text-align: left; } 
+    .stats-grid { grid-template-columns: repeat(4, 1fr); } 
+    .achievements-grid { grid-template-columns: 1fr 1fr; } 
+    .group-actions { flex-direction: row; justify-content: center; } 
+}
+@media (min-width: 992px) {
+    .main-menu { grid-template-columns: repeat(3, 1fr); }
+}

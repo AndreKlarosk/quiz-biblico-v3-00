@@ -1,4 +1,3 @@
-// Importações do Firebase e funções do Firestore
 import { auth, db } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -293,7 +292,12 @@ async function loadGeneralRanking() {
 
     } catch (error) {
         console.error("Erro ao carregar o ranking geral:", error);
-        rankingTbody.innerHTML = '<tr><td colspan="3">Não foi possível carregar o ranking.</td></tr>';
+        let errorMessage = 'Não foi possível carregar o ranking.';
+        // MELHORIA: Mensagem de erro específica para o problema do índice
+        if (error.code === 'failed-precondition') {
+            errorMessage = 'O ranking precisa de um índice no Firestore. Por favor, crie-o usando o link no console de erros do navegador.';
+        }
+        rankingTbody.innerHTML = `<tr><td colspan="3">${errorMessage}</td></tr>`;
     }
 }
 

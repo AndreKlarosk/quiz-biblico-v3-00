@@ -1,6 +1,6 @@
 import { auth, db } from './firebase.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc, updateDoc, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, getDoc, updateDoc, deleteDoc, arrayUnion, deleteField, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Elementos da UI ---
 const loadingDiv = document.getElementById('loading-group');
@@ -69,21 +69,37 @@ function displayGroupData() {
     if (groupCreatorSpan) groupCreatorSpan.textContent = groupData.criadorNome;
 
     const members = Object.values(groupData.membros).sort((a, b) => b.pontuacaoNoGrupo - a.pontuacaoNoGrupo);
+    const isCreator = currentUser && currentUser.uid === groupData.criadorUid;
 
     if (rankingTbody) {
         rankingTbody.innerHTML = '';
         members.forEach((member, index) => {
             const row = document.createElement('tr');
             const rankClass = `rank-${index + 1}`;
+            
+            const removeButtonHtml = isCreator && member.uid !== groupData.criadorUid
+                ? `<button class="remove-member-btn" data-uid="${member.uid}" title="Remover Membro"><i class="fas fa-times"></i></button>`
+                : '';
+
             row.innerHTML = `
                 <td class="rank ${rankClass}">${index + 1}</td>
                 <td class="member-info">
-                    <img src="${member.fotoURL || 'https://placehold.co/40x40'}" alt="Foto de ${member.nome}">
-                    <span>${member.nome}</span>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <img src="${member.fotoURL || 'https://placehold.co/40x40'}" alt="Foto de ${member.nome}">
+                        <span>${member.nome}</span>
+                    </div>
+                    ${removeButtonHtml}
                 </td>
                 <td class="score">${member.pontuacaoNoGrupo}</td>
             `;
             rankingTbody.appendChild(row);
+        });
+
+        rankingTbody.querySelectorAll('.remove-member-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const memberUid = e.currentTarget.dataset.uid;
+                removeMember(memberUid);
+            });
         });
     }
 
@@ -148,11 +164,12 @@ async function joinGroup() {
     const joinBtn = groupActionsDiv.querySelector('button');
     if (joinBtn) {
         joinBtn.disabled = true;
-        joinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+        joinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A entrar...';
     }
 
     const groupRef = doc(db, 'grupos', groupId);
     const newMemberData = {
+        uid: currentUser.uid,
         nome: currentUser.displayName || "Jogador Anônimo",
         fotoURL: currentUser.photoURL || "https://placehold.co/40x40",
         pontuacaoNoGrupo: 0
@@ -163,19 +180,34 @@ async function joinGroup() {
             [`membros.${currentUser.uid}`]: newMemberData,
             memberUIDs: arrayUnion(currentUser.uid)
         });
-        
-        // CORREÇÃO APLICADA AQUI:
-        // Atualiza o objeto local e redesenha a UI imediatamente.
         groupData.memberUIDs.push(currentUser.uid);
         groupData.membros[currentUser.uid] = newMemberData;
         displayGroupData();
-
     } catch (error) {
         console.error("Erro ao entrar no grupo:", error);
         alert("Não foi possível entrar no grupo.");
         if (joinBtn) {
             joinBtn.disabled = false;
             joinBtn.innerHTML = '<i class="fas fa-user-plus"></i> Entrar no Grupo';
+        }
+    }
+}
+
+async function removeMember(memberUid) {
+    const memberToRemove = groupData.membros[memberUid];
+    if (!memberToRemove) return;
+
+    if (confirm(`Tem a certeza que deseja remover "${memberToRemove.nome}" do grupo?`)) {
+        try {
+            const groupRef = doc(db, 'grupos', groupId);
+            await updateDoc(groupRef, {
+                [`membros.${memberUid}`]: deleteField(),
+                memberUIDs: arrayRemove(memberUid)
+            });
+            await loadGroupData(); // Recarrega os dados para refletir as alterações
+        } catch (error) {
+            console.error("Erro ao remover membro:", error);
+            alert("Não foi possível remover o membro.");
         }
     }
 }
@@ -217,7 +249,7 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
     }
 
     saveGroupBtn.disabled = true;
-    saveGroupBtn.textContent = 'Salvando...';
+    saveGroupBtn.textContent = 'A salvar...';
 
     try {
         const groupRef = doc(db, 'grupos', groupId);
@@ -237,7 +269,7 @@ if (saveGroupBtn) saveGroupBtn.addEventListener('click', async () => {
 });
 
 async function deleteGroup() {
-    if (confirm(`Tem certeza que deseja excluir o grupo "${groupData.nomeDoGrupo}"? Esta ação não pode ser desfeita.`)) {
+    if (confirm(`Tem a certeza que deseja excluir o grupo "${groupData.nomeDoGrupo}"? Esta ação não pode ser desfeita.`)) {
         try {
             await deleteDoc(doc(db, 'grupos', groupId));
             alert("Grupo excluído com sucesso.");

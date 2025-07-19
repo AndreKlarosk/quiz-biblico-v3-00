@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Bíblico Evangélico</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Quiz Bíblico</h1>
+            <div id="auth-container">
+                <button id="login-btn" class="btn btn-google"><i class="fab fa-google"></i> Login</button>
+                <div id="user-info" class="user-info hidden">
+                    <img id="user-photo" src="" alt="Foto do Usuário">
+                    <div class="user-details">
+                        <span id="user-name"></span>
+                        <div class="user-links">
+                            <a href="#" id="profile-link" class="hidden">Meu Perfil</a>
+                            <a href="/admin.html" id="admin-link" class="hidden">Admin</a>
+                            <a href="#" id="logout-btn" class="hidden">Sair</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main id="main-content">
+            <section id="initial-screen" class="screen">
+                <div id="welcome-message">
+                    <h2>"A tua palavra é lâmpada para os meus pés e luz para o meu caminho." - Salmos 119:105</h2>
+                </div>
+                
+                <div id="main-menu" class="main-menu hidden">
+                    <div id="individual-quiz-card" class="menu-card">
+                        <h3 id="individual-quiz-title"><i class="fas fa-user"></i> Quiz Individual</h3>
+                        <div id="group-play-notification" class="hidden">
+                            <p>Jogando pelo grupo: <strong id="group-play-name"></strong></p>
+                            <button id="back-to-menu-btn" class="btn btn-secondary btn-small" style="margin-top: 10px;"><i class="fas fa-arrow-left"></i> Voltar</button>
+                        </div>
+                        <p>Teste seus conhecimentos e some pontos para seu perfil!</p>
+                        <div id="difficulty-selection">
+                            <button class="btn" data-difficulty="facil">Fácil</button>
+                            <button class="btn" data-difficulty="medio">Médio</button>
+                            <button class="btn" data-difficulty="dificil">Difícil</button>
+                        </div>
+                    </div>
+                    <div id="group-competition-card" class="menu-card">
+                        <h3><i class="fas fa-users"></i> Competição em Grupo</h3>
+                        <p>Junte-se a um grupo ou crie o seu para competir com amigos!</p>
+                        <div id="groups-container">
+                            <div id="groups-list"></div>
+                            <button id="create-group-btn" class="btn"><i class="fas fa-plus"></i> Criar Grupo</button>
+                        </div>
+                    </div>
+                    <div id="ranking-card" class="menu-card" style="cursor: pointer;">
+                        <h3><i class="fas fa-trophy"></i> Ranking Geral</h3>
+                        <p>Veja os melhores jogadores e compare sua pontuação com a de todos os participantes.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="quiz-screen" class="screen hidden">
+                <div id="quiz-progress-container">
+                    <div id="quiz-progress-bar"></div>
+                </div>
+                <h3 id="question-text"></h3>
+                <div id="options-container" class="options-container"></div>
+                <div id="feedback-container">
+                    <p id="feedback"></p>
+                    <p id="reference"></p>
+                </div>
+                <button id="next-btn" class="btn hidden">Próxima</button>
+            </section>
+
+            <section id="result-screen" class="screen hidden">
+                <h2>Parabéns!</h2>
+                <p>Sua pontuação final foi:</p>
+                <p id="final-score"></p>
+                <div id="motivational-message"></div>
+                <button id="restart-btn" class="btn">Voltar ao Início</button>
+            </section>
+        </main>
+    </div>
+    
+    <div id="create-group-modal" class="modal">
+        <div class="modal-content">
+            <h3>Criar Novo Grupo</h3>
+            <input type="text" id="group-name-input" placeholder="Nome do seu grupo" maxlength="50">
+            <button id="save-group-btn" class="btn">Criar</button>
+            <button id="cancel-group-btn" class="btn btn-secondary">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="ranking-modal" class="modal">
+        <div class="modal-content">
+            <header class="ranking-header">
+                <h2><i class="fas fa-trophy"></i> Ranking Geral</h2>
+                <p>Os melhores jogadores do Quiz Bíblico!</p>
+            </header>
+            <div class="table-wrapper">
+                <table class="ranking-table">
+                    <thead>
+                        <tr>
+                            <th class="rank">#</th>
+                            <th>Jogador</th>
+                            <th class="score">Pontuação Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-tbody"></tbody>
+                </table>
+            </div>
+            <button id="close-ranking-btn" class="btn btn-secondary" style="margin-top: 1.5rem;">Fechar</button>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

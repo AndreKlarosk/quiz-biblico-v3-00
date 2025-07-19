@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Administração</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="admin-panel" class="container">
+        <header class="header">
+            <h1>Painel de Admin</h1>
+            <a href="/index.html">← Voltar ao Quiz</a>
+        </header>
+        
+        <main id="admin-content" class="hidden">
+            <div class="admin-form">
+                <h3>Gerenciamento em Massa</h3>
+                <label for="import-file">Importar perguntas de arquivo JSON:</label>
+                <input type="file" id="import-file" accept=".json">
+                <button id="import-btn" class="btn">Importar</button>
+                <hr>
+                <button id="export-btn" class="btn">Exportar Todas as Perguntas</button>
+            </div>
+
+            <div class="admin-form">
+                <h3 id="form-title">Adicionar Nova Pergunta</h3>
+                <input type="hidden" id="question-id">
+                <input type="text" id="enunciado" placeholder="Enunciado da pergunta">
+                <input type="text" id="alt1" placeholder="Alternativa 1">
+                <input type="text" id="alt2" placeholder="Alternativa 2">
+                <input type="text" id="alt3" placeholder="Alternativa 3">
+                <input type="text" id="alt4" placeholder="Alternativa 4">
+                <select id="correta">
+                    <option value="0">Alternativa 1 é a correta</option>
+                    <option value="1">Alternativa 2 é a correta</option>
+                    <option value="2">Alternativa 3 é a correta</option>
+                    <option value="3">Alternativa 4 é a correta</option>
+                </select>
+                <select id="nivel">
+                    <option value="facil">Fácil</option>
+                    <option value="medio">Médio</option>
+                    <option value="dificil">Difícil</option>
+                </select>
+                <input type="text" id="tema" placeholder="Tema (ex: personagens)">
+                <input type="text" id="referencia" placeholder="Referência (ex: Gênesis 1:1)">
+                <button id="save-question-btn" class="btn">Salvar</button>
+                <button id="cancel-edit-btn" class="btn hidden" style="background: #888;">Cancelar Edição</button>
+            </div>
+
+            <h2>Perguntas Cadastradas</h2>
+            <div class="table-container">
+                <table id="questions-table">
+                    <thead>
+                        <tr><th>Enunciado</th><th>Nível</th><th>Ações</th></tr>
+                    </thead>
+                    <tbody id="questions-tbody"></tbody>
+                </table>
+            </div>
+        </main>
+        <div id="auth-guard-message"><h2>Verificando permissões...</h2></div>
+    </div>
+    <script type="module" src="admin.js"></script>
+</body>
+</html>

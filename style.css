@@ -189,87 +189,69 @@ body { font-family: var(--font-family-body); background: var(--gray-color); colo
 @media (min-width: 992px) {
     .main-menu { grid-template-columns: repeat(3, 1fr); }
 }
-/* 1. Novas cores e fontes para o tema */
+
+/* --- TEMA INFANTIL --- */
 body.tema-crianca {
-  --primary-color: #29b6f6;   /* Azul Céu Brilhante */
-  --secondary-color: #ffca28;  /* Amarelo Sol */
-  --accent-color: #ff7043;    /* Laranja Vibrante */
-  --dark-color: #546e7a;     /* Cinza Azulado Escuro */
-  
-  /* Fonte mais arredondada e amigável */
+  --primary-color: #29b6f6;
+  --secondary-color: #ffca28;
+  --accent-color: #ff7043;
+  --dark-color: #546e7a;
   --font-family-headings: 'Nunito', sans-serif;
   --font-family-body: 'Nunito', sans-serif;
 }
-
-/* 3. Ajustar elementos principais para o tema infantil */
 body.tema-crianca .container {
   border: 3px solid var(--secondary-color);
 }
-
 body.tema-crianca .header h1 {
-  color: #fff; /* O header pode ter um fundo diferente */
+  color: #fff;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
 }
-
 body.tema-crianca .header {
   background-color: var(--primary-color);
   border-radius: 20px 20px 0 0;
   padding: 1.5rem 2.5rem;
-  margin: -2rem -2.5rem 2rem -2.5rem; /* Ajuste para o header preencher o topo */
+  margin: -2rem -2.5rem 2rem -2.5rem;
   color: white;
 }
-
-/* 4. Botões mais divertidos */
 body.tema-crianca .btn {
   background: var(--accent-color);
   border-radius: 16px;
-  box-shadow: 0 5px 0 #d85b31; /* Efeito 3D simples */
-  text-transform: none; /* Sem letras maiúsculas */
+  box-shadow: 0 5px 0 #d85b31;
+  text-transform: none;
   font-weight: 800;
   letter-spacing: 0;
 }
-
 body.tema-crianca .btn:hover {
   background: #ff8a65;
   box-shadow: 0 4px 0 #d85b31;
   transform: translateY(1px);
 }
-
 body.tema-crianca .btn:active {
   box-shadow: 0 2px 0 #d85b31;
   transform: translateY(3px);
 }
-
 body.tema-crianca .btn-secondary {
     background: #90a4ae;
     box-shadow: 0 5px 0 #6c7a82;
 }
-
-
-/* 5. Cards de menu mais coloridos */
 body.tema-crianca .menu-card {
-  background-color: #e3f2fd; /* Fundo azul bem claro */
+  background-color: #e3f2fd;
   border: 2px dashed var(--primary-color);
 }
-
-/* 6. Opções do Quiz mais visuais */
 body.tema-crianca .option-btn {
   border: 2px solid var(--primary-color);
   color: var(--dark-color);
   font-weight: 700;
 }
-
 body.tema-crianca .option-btn:hover {
-  background-color: #fff9c4; /* Amarelo clarinho */
+  background-color: #fff9c4;
   border-color: var(--secondary-color);
 }
-
 body.tema-crianca .option-btn.correct {
-  background-color: #66bb6a; /* Verde amigável */
+  background-color: #66bb6a;
   border-color: #66bb6a;
 }
-
 body.tema-crianca .option-btn.wrong {
-  background-color: #ef5350; /* Vermelho amigável */
+  background-color: #ef5350;
   border-color: #ef5350;
 }

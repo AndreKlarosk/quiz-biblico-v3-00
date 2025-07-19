@@ -67,7 +67,6 @@ body { font-family: var(--font-family-body); background: var(--gray-color); colo
 #individual-quiz-card.group-mode { border: 2px solid var(--accent-color); box-shadow: 0 0 20px rgba(253, 216, 53, 0.5); }
 
 /* --- QUIZ --- */
-.quiz-header-controls { display: flex; justify-content: flex-end; margin-bottom: 1rem; }
 #quiz-progress-container { width: 100%; background-color: #e0e0e0; border-radius: 10px; margin-bottom: 1rem; }
 #quiz-progress-bar { width: 0%; height: 10px; background: linear-gradient(90deg, var(--accent-color), #fbc02d); border-radius: 10px; transition: width 0.3s ease-in-out; }
 #quiz-screen h3 { font-size: 1.6rem; font-weight: 600; margin-bottom: 2rem; line-height: 1.5; }

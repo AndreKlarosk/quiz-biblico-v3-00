@@ -23,6 +23,11 @@ const cancelBioBtn = document.getElementById('cancel-bio-btn');
 const showInRankingCheckbox = document.getElementById('show-in-ranking-checkbox');
 const settingsSection = document.getElementById('profile-settings');
 
+// Novos elementos para Data de Nascimento
+const dobInput = document.getElementById('dob-input');
+const saveDobBtn = document.getElementById('save-dob-btn');
+
+
 let currentUser = null;
 let profileUid = null;
 
@@ -108,8 +113,13 @@ function displayProfileData(data) {
     if (editBioBtn) editBioBtn.classList.toggle('hidden', !isOwnProfile);
     if (settingsSection) settingsSection.classList.toggle('hidden', !isOwnProfile);
 
-    if (isOwnProfile && showInRankingCheckbox) {
-        showInRankingCheckbox.checked = data.showInRanking !== false;
+    if (isOwnProfile) {
+        if (showInRankingCheckbox) {
+            showInRankingCheckbox.checked = data.showInRanking !== false;
+        }
+        if (dobInput && data.dataDeNascimento) {
+            dobInput.value = data.dataDeNascimento;
+        }
     }
 
     const stats = data.stats || {};
@@ -182,6 +192,33 @@ if (saveBioBtn) saveBioBtn.addEventListener('click', async () => {
         saveBioBtn.textContent = 'Salvar';
     }
 });
+
+// Lógica para salvar a Data de Nascimento
+if (saveDobBtn) {
+    saveDobBtn.addEventListener('click', async () => {
+        const dobValue = dobInput.value;
+        if (!dobValue) {
+            alert("Por favor, selecione uma data válida.");
+            return;
+        }
+
+        saveDobBtn.disabled = true;
+        saveDobBtn.textContent = '...';
+
+        try {
+            const userRef = doc(db, 'usuarios', profileUid);
+            await updateDoc(userRef, { dataDeNascimento: dobValue });
+            alert("Data de nascimento atualizada com sucesso!");
+        } catch (error) {
+            console.error("Erro ao salvar data de nascimento:", error);
+            alert("Não foi possível salvar a data. Tente novamente.");
+        } finally {
+            saveDobBtn.disabled = false;
+            saveDobBtn.textContent = 'Salvar';
+        }
+    });
+}
+
 
 if (shareProfileBtn) shareProfileBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(window.location.href)

@@ -30,7 +30,6 @@ const statScoreMedio = document.getElementById('stat-score-medio');
 const statScoreDificil = document.getElementById('stat-score-dificil');
 
 // Elementos da seção de Bordas
-const bordersSection = document.getElementById('profile-borders-section');
 const changeBorderBtn = document.getElementById('change-border-btn');
 const bordersModal = document.getElementById('borders-modal');
 const closeBordersModal = document.getElementById('close-borders-modal');
@@ -97,7 +96,7 @@ window.addEventListener('DOMContentLoaded', () => {
         loadProfileData();
     });
 
-    // Adiciona os event listeners para o modal de bordas
+    // Event Listeners para o Modal de Bordas
     if (changeBorderBtn) changeBorderBtn.addEventListener('click', () => {
         if (bordersModal) bordersModal.style.display = "block";
     });
@@ -136,8 +135,8 @@ function displayProfileData(data) {
 
     const isOwnProfile = currentUser && currentUser.uid === profileUid;
     if (editBioBtn) editBioBtn.classList.toggle('hidden', !isOwnProfile);
+    if (changeBorderBtn) changeBorderBtn.classList.toggle('hidden', !isOwnProfile);
     if (settingsSection) settingsSection.classList.toggle('hidden', !isOwnProfile);
-    if (bordersSection) bordersSection.classList.toggle('hidden', !isOwnProfile);
 
     const equippedBorder = data.bordaEquipada || 'default';
     if (profilePhotoContainer) {
@@ -161,7 +160,7 @@ function displayProfileData(data) {
 
             Object.keys(allBorders).forEach(key => {
                 if (unlockedBorders.has(key)) {
-                    const border = allBorders[key];
+                    const border = allBorders[key]; // CORREÇÃO: Usar allBorders[key]
                     const borderElement = document.createElement('div');
                     borderElement.className = 'profile-photo-container';
                     borderElement.classList.add(key);
@@ -215,7 +214,7 @@ function displayProfileData(data) {
         achievementsGrid.innerHTML = '';
         const userAchievements = new Set(data.conquistas || []);
         Object.keys(allAchievements).forEach(key => {
-            const achievement = allAchievements[key];
+            const achievement = allAchievements[key]; // CORREÇÃO: Usar allAchievements[key]
             const isUnlocked = userAchievements.has(key);
             const achievElement = document.createElement('div');
             achievElement.className = 'achievement-badge' + (isUnlocked ? '' : ' locked');
@@ -231,6 +230,7 @@ function showNotFound() {
     if (notFoundDiv) notFoundDiv.classList.remove('hidden');
 }
 
+// O restante das funções (para bio, data de nascimento, etc.) permanece o mesmo
 if (editBioBtn) editBioBtn.addEventListener('click', () => {
     if (bioTextarea) bioTextarea.value = profileBio.textContent;
     if (editBioModal) editBioModal.classList.add('visible');

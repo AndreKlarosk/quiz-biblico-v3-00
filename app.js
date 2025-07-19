@@ -221,7 +221,7 @@ async function saveUserToFirestore(user) {
             await setDoc(userRef, {
                 uid: user.uid,
                 nome: user.displayName || "Jogador Anônimo",
-                email: user.email,
+                email: user.email || "", // CORREÇÃO AQUI para evitar valor nulo
                 fotoURL: user.photoURL || "https://placehold.co/150x150/e0e0e0/333?text=?",
                 admin: false,
                 bio: "Novo no Quiz Bíblico!",
@@ -620,7 +620,6 @@ if (createCompetitionBtn) createCompetitionBtn.addEventListener('click', async (
     try {
         const inviteCode = Math.random().toString(36).substring(2, 7).toUpperCase();
         
-        // CORREÇÃO AQUI: O campo de dificuldade no Firestore é 'nivel', não 'dificuldade'.
         const q = query(collection(db, "perguntas"), where("nivel", "==", difficulty), limit(numQuestions));
         
         const questionsSnapshot = await getDocs(q);

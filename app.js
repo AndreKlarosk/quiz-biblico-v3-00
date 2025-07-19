@@ -221,7 +221,7 @@ async function saveUserToFirestore(user) {
             await setDoc(userRef, {
                 uid: user.uid,
                 nome: user.displayName || "Jogador Anônimo",
-                email: user.email || "", // CORREÇÃO AQUI para evitar valor nulo
+                email: user.email || "", 
                 fotoURL: user.photoURL || "https://placehold.co/150x150/e0e0e0/333?text=?",
                 admin: false,
                 bio: "Novo no Quiz Bíblico!",
@@ -615,19 +615,38 @@ if (createCompetitionBtn) createCompetitionBtn.addEventListener('click', async (
     const numQuestions = parseInt(competitionQuestionsSelect.value);
     
     createCompetitionBtn.disabled = true;
-    createCompetitionBtn.textContent = "Criando...";
+    createCompetitionBtn.textContent = "Verificando...";
 
     try {
         const inviteCode = Math.random().toString(36).substring(2, 7).toUpperCase();
         
-        const q = query(collection(db, "perguntas"), where("nivel", "==", difficulty), limit(numQuestions));
-        
-        const questionsSnapshot = await getDocs(q);
-        const competitionQuestions = questionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // LÓGICA DE BUSCA DE PERGUNTAS CORRIGIDA
+        const primaryQuery = query(
+            collection(db, "perguntas"),
+            where("nivel", "==", difficulty),
+            where("faixaEtaria", "array-contains", currentUserAgeGroup)
+        );
+        const primarySnapshot = await getDocs(primaryQuery);
+        let allAvailableQuestions = primarySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        if (competitionQuestions.length < numQuestions) {
-            throw new Error("Não há perguntas suficientes para esta configuração.");
+        if (allAvailableQuestions.length < numQuestions) {
+            console.warn(`Apenas ${allAvailableQuestions.length} perguntas encontradas para ${difficulty}/${currentUserAgeGroup}. Buscando em todas as faixas etárias.`);
+            const fallbackQuery = query(collection(db, "perguntas"), where("nivel", "==", difficulty));
+            const fallbackSnapshot = await getDocs(fallbackQuery);
+            
+            fallbackSnapshot.forEach(doc => {
+                if (!allAvailableQuestions.find(q => q.id === doc.id)) {
+                    allAvailableQuestions.push({ id: doc.id, ...doc.data() });
+                }
+            });
         }
+
+        if (allAvailableQuestions.length < numQuestions) {
+            throw new Error(`Não há perguntas suficientes para esta configuração. Encontradas: ${allAvailableQuestions.length}, Necessárias: ${numQuestions}.`);
+        }
+
+        const competitionQuestions = allAvailableQuestions.sort(() => 0.5 - Math.random()).slice(0, numQuestions);
+        // FIM DA LÓGICA CORRIGIDA
 
         const competitionRef = await addDoc(collection(db, "competicoes"), {
             codigoConvite: inviteCode,

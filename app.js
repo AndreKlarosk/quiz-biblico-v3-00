@@ -1,6 +1,6 @@
 import { auth, db } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, limit, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, limit, onSnapshot, writeBatch, deleteField, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Elementos da UI ---
 const loginBtn = document.getElementById('login-btn');
@@ -922,26 +922,34 @@ if(startCompetitionBtn) startCompetitionBtn.addEventListener('click', async () =
     const competitionRef = doc(db, 'competicoes', activeCompetitionId);
     await updateDoc(competitionRef, { estado: 'em_andamento' });
 });
+
 if(leaveWaitingRoomBtn) leaveWaitingRoomBtn.addEventListener('click', leaveWaitingRoom);
+
 async function leaveWaitingRoom() {
     const isCreator = startCompetitionBtn && !startCompetitionBtn.classList.contains('hidden');
 
     if(isCreator) {
-        // Se o criador sai, a sala é deletada
         if(confirm("Você é o criador da sala. Sair irá fechar a sala para todos. Deseja continuar?")) {
-            const competitionRef = doc(db, 'competicoes', activeCompetitionId);
-            const batch = writeBatch(db);
-            batch.delete(competitionRef);
-            await batch.commit(); // A sala será fechada para todos via onSnapshot
+            try {
+                const competitionRef = doc(db, 'competicoes', activeCompetitionId);
+                // O listener onSnapshot nos outros clientes cuidará de avisá-los
+                await deleteDoc(competitionRef);
+            } catch (error) {
+                console.error("Erro ao deletar a sala:", error);
+            }
         } else {
-            return; // O criador cancelou a saída
+            return; 
         }
     } else {
-        // Se um participante normal sai, ele é removido da lista
-        const competitionRef = doc(db, 'competicoes', activeCompetitionId);
-        await updateDoc(competitionRef, {
-            [`participantes.${currentUser.uid}`]: null // Firestore não tem um 'delete field', então usamos null e filtramos
-        });
+        try {
+            const competitionRef = doc(db, 'competicoes', activeCompetitionId);
+            // CORREÇÃO: Usando deleteField para remover o participante do mapa.
+            await updateDoc(competitionRef, {
+                [`participantes.${currentUser.uid}`]: deleteField()
+            });
+        } catch (error) {
+             console.error("Erro ao sair da sala:", error)
+        }
     }
 
     if (unsubscribeCompetition) unsubscribeCompetition();

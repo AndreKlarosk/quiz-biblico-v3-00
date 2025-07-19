@@ -48,25 +48,29 @@
                             <button class="btn" data-difficulty="dificil">Difícil</button>
                         </div>
                     </div>
+                    
                     <div id="competition-card" class="menu-card" style="cursor: pointer;">
-                        <h3><i class="fas fa-fist-raised"></i> Competição</h3>
-                        <p>Desafie amigos em tempo real em partidas de grupo ou 1x1 e ganhe recompensas.</p>
+                        <h3><i class="fas fa-users-line"></i> Competição</h3>
+                        <p>Crie uma sala ou junte-se a amigos para uma partida em equipe!</p>
                     </div>
-                    <div id="group-competition-card" class="menu-card">
-                        <h3><i class="fas fa-users"></i> Competição em Grupo</h3>
-                        <p>Junte-se a um grupo ou crie o seu para competir com amigos!</p>
+
+                    <div id="group-card" class="menu-card">
+                        <h3><i class="fas fa-users"></i> Grupos de Estudo</h3>
+                        <p>Junte-se a um grupo ou crie o seu para competir e conversar com amigos!</p>
                         <div id="groups-container">
                             <div id="groups-list"></div>
                             <button id="create-group-btn" class="btn"><i class="fas fa-plus"></i> Criar Grupo</button>
                         </div>
                     </div>
+
                     <div id="ranking-card" class="menu-card" style="cursor: pointer;">
                         <h3><i class="fas fa-trophy"></i> Ranking Geral</h3>
-                        <p>Veja os melhores jogadores e compare a sua pontuação com a de todos os participantes.</p>
+                        <p>Veja os melhores jogadores e compare a sua pontuação.</p>
                     </div>
+                    
                     <div id="bible-card" class="menu-card" style="cursor: pointer;">
                         <h3><i class="fas fa-book-open"></i> Consultar a Bíblia</h3>
-                        <p>Leia e pesquise qualquer livro ou capítulo das Sagradas Escrituras diretamente aqui.</p>
+                        <p>Leia e pesquise qualquer livro ou capítulo das Escrituras.</p>
                     </div>
                 </div>
             </section>
@@ -99,7 +103,7 @@
     
     <div id="create-group-modal" class="modal">
         <div class="modal-content">
-            <h3>Criar Novo Grupo</h3>
+            <h3>Criar Novo Grupo de Estudo</h3>
             <input type="text" id="group-name-input" placeholder="Nome do seu grupo" maxlength="50">
             <label for="group-difficulty-select" style="margin-top: 1rem; display: block;">Nível de Dificuldade Padrão</label>
             <select id="group-difficulty-select" class="styled-select">
@@ -112,25 +116,81 @@
         </div>
     </div>
 
-    <div id="ranking-modal" class="modal">
+    <div id="competition-lobby-modal" class="modal">
         <div class="modal-content">
-            <header class="ranking-header">
-                <h2><i class="fas fa-trophy"></i> Ranking Geral</h2>
-                <p>Os melhores jogadores do Quiz Bíblico!</p>
-            </header>
-            <div class="table-wrapper">
-                <table class="ranking-table">
-                    <thead>
-                        <tr>
-                            <th class="rank">#</th>
-                            <th>Jogador</th>
-                            <th class="score">Pontuação Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ranking-tbody"></tbody>
-                </table>
+            <span class="close-button" id="close-lobby-btn">&times;</span>
+            <h3>Competição em Equipe</h3>
+            <p>Crie uma sala para desafiar seus amigos ou entre em uma sala existente com um código.</p>
+            <div class="competition-actions">
+                <button class="btn" id="show-create-competition-btn"><i class="fas fa-plus"></i> Criar Sala</button>
+                <div class="join-action">
+                    <input type="text" id="join-code-input" placeholder="Código da Sala">
+                    <button class="btn" id="join-competition-btn">Entrar</button>
+                </div>
             </div>
-            <button id="close-ranking-btn" class="btn btn-secondary" style="margin-top: 1.5rem;">Fechar</button>
+        </div>
+    </div>
+
+    <div id="create-competition-modal" class="modal">
+        <div class="modal-content">
+            <h3>Configurar Nova Competição</h3>
+            <label for="competition-difficulty-select">Nível das Perguntas</label>
+            <select id="competition-difficulty-select" class="styled-select">
+                <option value="facil">Fácil</option>
+                <option value="medio">Médio</option>
+                <option value="dificil">Difícil</option>
+            </select>
+            <label for="competition-questions-select">Quantidade de Perguntas</label>
+            <select id="competition-questions-select" class="styled-select">
+                <option value="10">10 Perguntas</option>
+                <option value="15">15 Perguntas</option>
+                <option value="20">20 Perguntas</option>
+            </select>
+            <button id="create-competition-btn" class="btn">Criar Sala</button>
+            <button id="cancel-create-competition-btn" class="btn btn-secondary">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="team-selection-modal" class="modal">
+        <div class="modal-content">
+            <h3>Escolha sua Equipe</h3>
+            <p>Para entrar na sala, selecione uma das equipes abaixo.</p>
+            <div class="team-selection-buttons">
+                <button id="join-blue-btn" class="btn team-btn-blue"><i class="fas fa-user-shield"></i> Equipe Azul</button>
+                <button id="join-yellow-btn" class="btn team-btn-yellow"><i class="fas fa-user-ninja"></i> Equipe Amarela</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="waiting-room-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <h3>Sala de Espera</h3>
+            <p>Compartilhe o código com seus amigos: <strong id="invite-code-display"></strong></p>
+            
+            <div class="teams-container">
+                <div class="team-column">
+                    <h4 class="team-blue-header">Equipe Azul</h4>
+                    <ul id="blue-team-list" class="player-list-ul"></ul>
+                </div>
+                <div class="team-column">
+                    <h4 class="team-yellow-header">Equipe Amarela</h4>
+                    <ul id="yellow-team-list" class="player-list-ul"></ul>
+                </div>
+            </div>
+
+            <div class="competition-chat">
+                <h4>Chat da Sala</h4>
+                <div id="competition-chat-messages" class="chat-messages"></div>
+                <form id="competition-chat-form" class="chat-form">
+                    <input type="text" id="competition-chat-input" placeholder="Escreva uma mensagem..." autocomplete="off">
+                    <button type="submit" class="btn"><i class="fas fa-paper-plane"></i></button>
+                </form>
+            </div>
+
+            <div class="waiting-room-actions">
+                <button id="leave-waiting-room-btn" class="btn btn-secondary">Sair da Sala</button>
+                <button id="start-competition-btn" class="btn hidden">Iniciar Competição</button>
+            </div>
         </div>
     </div>
 
@@ -145,6 +205,7 @@
 
     <div id="bible-modal" class="modal">
         <div class="modal-content" style="max-width: 800px; text-align: left;">
+             <span class="close-button" id="close-bible-btn">&times;</span>
             <header class="ranking-header">
                 <h2><i class="fas fa-book-open"></i> Bíblia Sagrada</h2>
             </header>
@@ -153,57 +214,9 @@
                 <select id="bible-chapter-select" class="styled-select" style="min-width: 100px;"></select>
                 <button id="load-chapter-btn" class="btn btn-small">Carregar</button>
             </div>
-            <div id="bible-text-container" style="max-height: 50vh; overflow-y: auto; background: var(--gray-color); padding: 1rem; border-radius: 8px;">
+            <div id="bible-text-container" style="max-height: 50vh; overflow-y: auto; background: #f5f7fa; padding: 1rem; border-radius: 8px;">
                 <p id="bible-text-display">Selecione um livro e capítulo para começar a leitura.</p>
             </div>
-            <button id="close-bible-btn" class="btn btn-secondary" style="margin-top: 1.5rem;">Fechar</button>
-        </div>
-    </div>
-
-    <div id="competition-lobby-modal" class="modal">
-        <div class="modal-content">
-            <h3>Modo Competição</h3>
-            <p>Crie uma sala para desafiar seus amigos ou entre em uma com um código.</p>
-            <div class="main-menu" style="grid-template-columns: 1fr; gap: 1rem;">
-                <button id="show-create-competition-btn" class="btn"><i class="fas fa-plus"></i> Criar Competição</button>
-                <div style="display: flex; gap: 10px; width: 100%;">
-                    <input type="text" id="join-code-input" placeholder="Código da Sala" style="text-transform: uppercase; flex-grow: 1;">
-                    <button id="join-competition-btn" class="btn btn-secondary">Entrar</button>
-                </div>
-            </div>
-            <button id="close-lobby-btn" class="btn btn-secondary" style="margin-top: 1.5rem;">Voltar</button>
-        </div>
-    </div>
-
-    <div id="create-competition-modal" class="modal">
-        <div class="modal-content">
-            <h3>Criar Nova Competição</h3>
-            <label>Nível de Dificuldade:</label>
-            <select id="competition-difficulty-select" class="styled-select">
-                <option value="facil">Fácil</option>
-                <option value="medio">Médio</option>
-                <option value="dificil">Difícil</option>
-            </select>
-            <label style="margin-top: 1rem; display: block;">Quantidade de Perguntas:</label>
-            <select id="competition-questions-select" class="styled-select">
-                <option value="5">5 Perguntas</option>
-                <option value="10" selected>10 Perguntas</option>
-                <option value="15">15 Perguntas</option>
-            </select>
-            <button id="create-competition-btn" class="btn" style="margin-top: 1.5rem;">Criar Sala</button>
-            <button id="cancel-create-competition-btn" class="btn btn-secondary">Cancelar</button>
-        </div>
-    </div>
-
-    <div id="waiting-room-modal" class="modal">
-        <div class="modal-content">
-            <h3>Sala de Espera</h3>
-            <p>Compartilhe o código com seus amigos!</p>
-            <div id="invite-code-display" style="font-size: 2.5rem; font-weight: bold; letter-spacing: 5px; margin: 1rem 0; padding: 1rem; background: var(--gray-color); border-radius: 8px;">CÓDIGO</div>
-            <h4>Jogadores na Sala:</h4>
-            <ul id="player-list" style="list-style: none; min-height: 100px;"></ul>
-            <button id="start-competition-btn" class="btn hidden">Iniciar Competição</button>
-            <button id="leave-waiting-room-btn" class="btn btn-secondary">Sair da Sala</button>
         </div>
     </div>
 

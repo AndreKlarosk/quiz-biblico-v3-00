@@ -48,6 +48,10 @@
                             <button class="btn" data-difficulty="dificil">Difícil</button>
                         </div>
                     </div>
+                    <div id="competition-card" class="menu-card" style="cursor: pointer;">
+                        <h3><i class="fas fa-fist-raised"></i> Competição</h3>
+                        <p>Desafie amigos em tempo real em partidas de grupo ou 1x1 e ganhe recompensas.</p>
+                    </div>
                     <div id="group-competition-card" class="menu-card">
                         <h3><i class="fas fa-users"></i> Competição em Grupo</h3>
                         <p>Junte-se a um grupo ou crie o seu para competir com amigos!</p>
@@ -59,10 +63,6 @@
                     <div id="ranking-card" class="menu-card" style="cursor: pointer;">
                         <h3><i class="fas fa-trophy"></i> Ranking Geral</h3>
                         <p>Veja os melhores jogadores e compare a sua pontuação com a de todos os participantes.</p>
-                    </div>
-                    <div id="competition-card" class="menu-card" style="cursor: pointer;">
-                        <h3><i class="fas fa-fist-raised"></i> Competição</h3>
-                        <p>Desafie amigos em tempo real em partidas de grupo ou 1x1 e ganhe recompensas.</p>
                     </div>
                     <div id="bible-card" class="menu-card" style="cursor: pointer;">
                         <h3><i class="fas fa-book-open"></i> Consultar a Bíblia</h3>
@@ -98,13 +98,67 @@
     </div>
     
     <div id="create-group-modal" class="modal">
+        <div class="modal-content">
+            <h3>Criar Novo Grupo</h3>
+            <input type="text" id="group-name-input" placeholder="Nome do seu grupo" maxlength="50">
+            <label for="group-difficulty-select" style="margin-top: 1rem; display: block;">Nível de Dificuldade Padrão</label>
+            <select id="group-difficulty-select" class="styled-select">
+                <option value="facil">Fácil</option>
+                <option value="medio">Médio</option>
+                <option value="dificil">Difícil</option>
+            </select>
+            <button id="save-group-btn" class="btn" style="margin-top: 1rem;">Criar</button>
+            <button id="cancel-group-btn" class="btn btn-secondary">Cancelar</button>
         </div>
+    </div>
+
     <div id="ranking-modal" class="modal">
+        <div class="modal-content">
+            <header class="ranking-header">
+                <h2><i class="fas fa-trophy"></i> Ranking Geral</h2>
+                <p>Os melhores jogadores do Quiz Bíblico!</p>
+            </header>
+            <div class="table-wrapper">
+                <table class="ranking-table">
+                    <thead>
+                        <tr>
+                            <th class="rank">#</th>
+                            <th>Jogador</th>
+                            <th class="score">Pontuação Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-tbody"></tbody>
+                </table>
+            </div>
+            <button id="close-ranking-btn" class="btn btn-secondary" style="margin-top: 1.5rem;">Fechar</button>
         </div>
+    </div>
+
     <div id="dob-modal" class="modal">
+        <div class="modal-content">
+            <h3>Bem-vindo(a)!</h3>
+            <p>Para personalizar sua experiência, por favor, informe sua data de nascimento.</p>
+            <input type="date" id="dob-input" style="width: 100%; padding: 10px; margin: 1rem 0;">
+            <button id="save-dob-btn" class="btn">Confirmar</button>
         </div>
+    </div>
+
     <div id="bible-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px; text-align: left;">
+            <header class="ranking-header">
+                <h2><i class="fas fa-book-open"></i> Bíblia Sagrada</h2>
+            </header>
+            <div id="bible-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <select id="bible-book-select" class="styled-select" style="flex-grow: 1;"></select>
+                <select id="bible-chapter-select" class="styled-select" style="min-width: 100px;"></select>
+                <button id="load-chapter-btn" class="btn btn-small">Carregar</button>
+            </div>
+            <div id="bible-text-container" style="max-height: 50vh; overflow-y: auto; background: var(--gray-color); padding: 1rem; border-radius: 8px;">
+                <p id="bible-text-display">Selecione um livro e capítulo para começar a leitura.</p>
+            </div>
+            <button id="close-bible-btn" class="btn btn-secondary" style="margin-top: 1.5rem;">Fechar</button>
         </div>
+    </div>
 
     <div id="competition-lobby-modal" class="modal">
         <div class="modal-content">

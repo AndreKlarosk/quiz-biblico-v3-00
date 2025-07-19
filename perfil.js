@@ -28,7 +28,7 @@ const saveDobBtn = document.getElementById('save-dob-btn');
 const statScoreFacil = document.getElementById('stat-score-facil');
 const statScoreMedio = document.getElementById('stat-score-medio');
 const statScoreDificil = document.getElementById('stat-score-dificil');
-const bordersSection = document.getElementById('profile-borders-section'); // LINHA CORRIGIDA 1: Adicionada a declaração do elemento
+const bordersSection = document.getElementById('profile-borders-section');
 const bordersGrid = document.getElementById('borders-grid');
 
 let currentUser = null;
@@ -118,7 +118,7 @@ function displayProfileData(data) {
     const isOwnProfile = currentUser && currentUser.uid === profileUid;
     if (editBioBtn) editBioBtn.classList.toggle('hidden', !isOwnProfile);
     if (settingsSection) settingsSection.classList.toggle('hidden', !isOwnProfile);
-    if(bordersSection) bordersSection.classList.toggle('hidden', !isOwnProfile); // LINHA CORRIGIDA 2: Adicionada a lógica de visibilidade
+    if(bordersSection) bordersSection.classList.toggle('hidden', !isOwnProfile);
 
     const equippedBorder = data.bordaEquipada || 'default';
     if (profilePhotoContainer) {
@@ -139,9 +139,9 @@ function displayProfileData(data) {
             bordersGrid.innerHTML = '';
             const unlockedBorders = new Set(data.bordasDesbloqueadas || []);
             unlockedBorders.add('default');
-            unlockedBorders.add('simples_azul'); // Borda inicial
-            unlockedBorders.add('simples_verde'); // Borda inicial
-            unlockedBorders.add('simples_roxo'); // Borda inicial
+            unlockedBorders.add('simples_azul');
+            unlockedBorders.add('simples_verde');
+            unlockedBorders.add('simples_roxo');
 
             Object.keys(allBorders).forEach(key => {
                 const border = allBorders[key];

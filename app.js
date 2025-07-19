@@ -1,6 +1,6 @@
 import { auth, db } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, limit, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Elementos da UI ---
 const loginBtn = document.getElementById('login-btn');
@@ -60,13 +60,21 @@ const joinCompetitionBtn = document.getElementById('join-competition-btn');
 const createCompetitionModal = document.getElementById('create-competition-modal');
 const competitionDifficultySelect = document.getElementById('competition-difficulty-select');
 const competitionQuestionsSelect = document.getElementById('competition-questions-select');
+const competitionMinPlayersInput = document.getElementById('competition-min-players-input');
 const createCompetitionBtn = document.getElementById('create-competition-btn');
 const cancelCreateCompetitionBtn = document.getElementById('cancel-create-competition-btn');
 const waitingRoomModal = document.getElementById('waiting-room-modal');
 const inviteCodeDisplay = document.getElementById('invite-code-display');
-const playerList = document.getElementById('player-list');
 const startCompetitionBtn = document.getElementById('start-competition-btn');
 const leaveWaitingRoomBtn = document.getElementById('leave-waiting-room-btn');
+const teamAzulBox = document.getElementById('team-azul');
+const teamAmareloBox = document.getElementById('team-amarelo');
+const teamAzulList = document.getElementById('team-azul-list');
+const teamAmareloList = document.getElementById('team-amarelo-list');
+const chatMessagesDiv = document.getElementById('chat-messages');
+const chatFormWaitingRoom = document.getElementById('chat-form-waiting-room');
+const chatInputWaitingRoom = document.getElementById('chat-input-waiting-room');
+const startRequirementMessage = document.getElementById('start-requirement-message');
 
 // --- Estado do Quiz e Usuário ---
 let currentUser = null;
@@ -79,6 +87,7 @@ let currentGroupId = null;
 let quizAtualDifficulty = 'facil';
 let activeCompetitionId = null;
 let unsubscribeCompetition = null;
+let unsubscribeChat = null;
 
 // --- Dados da Bíblia ---
 const bibleBooks = {
@@ -650,6 +659,12 @@ if (createCompetitionBtn) createCompetitionBtn.addEventListener('click', async (
     
     const difficulty = competitionDifficultySelect.value;
     const numQuestions = parseInt(competitionQuestionsSelect.value);
+    const minPlayers = parseInt(competitionMinPlayersInput.value);
+
+    if(minPlayers < 2) {
+        alert("O mínimo de participantes deve ser 2 ou mais.");
+        return;
+    }
     
     createCompetitionBtn.disabled = true;
     createCompetitionBtn.textContent = "Verificando...";
@@ -689,13 +704,15 @@ if (createCompetitionBtn) createCompetitionBtn.addEventListener('click', async (
             estado: "aguardando",
             dificuldade: difficulty,
             numPerguntas: numQuestions,
+            minParticipantes: minPlayers,
             perguntas: competitionQuestions,
             participantes: {
                 [currentUser.uid]: {
                     nome: currentUser.displayName,
                     fotoURL: currentUser.photoURL,
                     pontuacao: 0,
-                    respostas: []
+                    respostas: [],
+                    team: null // 'azul' or 'amarelo'
                 }
             },
             dataCriacao: serverTimestamp()
@@ -738,7 +755,8 @@ if (joinCompetitionBtn) joinCompetitionBtn.addEventListener('click', async () =>
                 nome: currentUser.displayName,
                 fotoURL: currentUser.photoURL,
                 pontuacao: 0,
-                respostas: []
+                respostas: [],
+                team: null
             }
         });
         activeCompetitionId = competitionDoc.id;
@@ -754,54 +772,142 @@ if (joinCompetitionBtn) joinCompetitionBtn.addEventListener('click', async () =>
         if(competitionLobbyModal) competitionLobbyModal.classList.remove('visible');
     }
 });
+
+async function selectTeam(team) {
+    if(!activeCompetitionId || !currentUser) return;
+    const competitionRef = doc(db, 'competicoes', activeCompetitionId);
+    try {
+        await updateDoc(competitionRef, {
+            [`participantes.${currentUser.uid}.team`]: team
+        });
+    } catch(error) {
+        console.error("Erro ao selecionar equipe:", error);
+    }
+}
+
+teamAzulBox.addEventListener('click', () => selectTeam('azul'));
+teamAmareloBox.addEventListener('click', () => selectTeam('amarelo'));
+
 function showWaitingRoom(isCreator) {
     if(waitingRoomModal) waitingRoomModal.classList.add('visible');
     if(startCompetitionBtn) startCompetitionBtn.classList.toggle('hidden', !isCreator);
 
     if (unsubscribeCompetition) unsubscribeCompetition();
 
-    unsubscribeCompetition = onSnapshot(doc(db, 'competicoes', activeCompetitionId), (doc) => {
-        if (!doc.exists()) {
+    unsubscribeCompetition = onSnapshot(doc(db, 'competicoes', activeCompetitionId), (docSnapshot) => {
+        if (!docSnapshot.exists()) {
             alert("A sala de competição foi fechada pelo criador.");
             leaveWaitingRoom();
             return;
         }
 
-        const data = doc.data();
-        inviteCodeDisplay.textContent = data.codigoConvite;
+        const data = docSnapshot.data();
+        if(inviteCodeDisplay) inviteCodeDisplay.textContent = data.codigoConvite;
         
-        playerList.innerHTML = '';
-        Object.values(data.participantes).forEach(player => {
-            const li = document.createElement('li');
-            li.textContent = player.nome;
-            playerList.appendChild(li);
+        // Limpa listas
+        teamAzulList.innerHTML = '';
+        teamAmareloList.innerHTML = '';
+
+        const participantes = data.participantes || {};
+        const participantesArray = Object.values(participantes);
+
+        Object.entries(participantes).forEach(([uid, player]) => {
+            const playerElement = document.createElement('li');
+            playerElement.innerHTML = `<img src="${player.fotoURL || 'https://placehold.co/30x30/e0e0e0/333?text=?'}" alt="Foto de ${player.nome}"> <span>${player.nome}</span>`;
+            if(player.team === 'azul') {
+                teamAzulList.appendChild(playerElement);
+            } else if (player.team === 'amarelo') {
+                teamAmareloList.appendChild(playerElement);
+            } else {
+                 // Jogador ainda não escolheu, pode-se adicionar a uma lista de 'sem equipe' se quiser
+            }
         });
+
+        const myTeam = participantes[currentUser.uid]?.team;
+        teamAzulBox.classList.toggle('selected', myTeam === 'azul');
+        teamAmareloBox.classList.toggle('selected', myTeam === 'amarelo');
+
+
+        // Lógica para habilitar o botão de início
+        if(isCreator && startCompetitionBtn) {
+            const playerCount = participantesArray.length;
+            if(playerCount >= data.minParticipantes) {
+                startCompetitionBtn.disabled = false;
+                startRequirementMessage.classList.add('hidden');
+            } else {
+                startCompetitionBtn.disabled = true;
+                startRequirementMessage.textContent = `São necessários pelo menos ${data.minParticipantes} jogadores para começar. Atuais: ${playerCount}.`;
+                startRequirementMessage.classList.remove('hidden');
+            }
+        }
 
         if (data.estado === 'em_andamento') {
             if (unsubscribeCompetition) unsubscribeCompetition();
             if(waitingRoomModal) waitingRoomModal.classList.remove('visible');
             alert("A competição vai começar!");
-            // CORREÇÃO: Chamada da função foi descomentada e ativada
             startCompetitionQuiz(data.perguntas);
+        }
+    });
+
+    listenToChat();
+}
+
+function listenToChat() {
+    if (unsubscribeChat) unsubscribeChat();
+    const messagesRef = collection(db, 'competicoes', activeCompetitionId, 'messages');
+    const q = query(messagesRef, orderBy('timestamp', 'asc'), limit(50));
+
+    unsubscribeChat = onSnapshot(q, (snapshot) => {
+        if(!chatMessagesDiv) return;
+        chatMessagesDiv.innerHTML = '';
+        snapshot.forEach(doc => {
+            const message = doc.data();
+            const messageEl = document.createElement('div');
+            messageEl.classList.add('chat-message');
+            if(message.uid === currentUser.uid) {
+                messageEl.classList.add('my-message');
+            }
+            messageEl.innerHTML = `
+                <span class="message-sender">${message.senderName}</span>
+                <div class="message-bubble">${message.text}</div>
+            `;
+            chatMessagesDiv.appendChild(messageEl);
+        });
+        chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+    });
+}
+
+if(chatFormWaitingRoom) {
+    chatFormWaitingRoom.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const messageText = chatInputWaitingRoom.value.trim();
+        if(messageText.length === 0 || !currentUser || !activeCompetitionId) return;
+
+        chatInputWaitingRoom.value = '';
+        try {
+            const messagesRef = collection(db, 'competicoes', activeCompetitionId, 'messages');
+            await addDoc(messagesRef, {
+                text: messageText,
+                uid: currentUser.uid,
+                senderName: currentUser.displayName,
+                timestamp: serverTimestamp()
+            });
+        } catch(error) {
+            console.error("Erro ao enviar mensagem:", error);
+            chatInputWaitingRoom.value = messageText; // Retorna a mensagem ao input se falhar
         }
     });
 }
 
-// FUNÇÃO ADICIONADA: Inicia o quiz da competição para todos os jogadores
 function startCompetitionQuiz(competitionQuestions) {
-    // Zera as variáveis do quiz
     score = 0;
     correctAnswersCount = 0;
     currentQuestionIndex = 0;
-
-    // Define as perguntas do quiz como sendo as da competição
     questions = competitionQuestions;
 
-    // Garante que a interface do quiz está pronta
     if (nextBtn) nextBtn.classList.add('hidden');
     if (progressBar) progressBar.style.width = '0%';
 
-    // Leva o jogador para a tela do quiz
     if (questions.length > 0) {
         switchScreen('quiz-screen');
         displayQuestion();
@@ -818,7 +924,29 @@ if(startCompetitionBtn) startCompetitionBtn.addEventListener('click', async () =
 });
 if(leaveWaitingRoomBtn) leaveWaitingRoomBtn.addEventListener('click', leaveWaitingRoom);
 async function leaveWaitingRoom() {
+    const isCreator = startCompetitionBtn && !startCompetitionBtn.classList.contains('hidden');
+
+    if(isCreator) {
+        // Se o criador sai, a sala é deletada
+        if(confirm("Você é o criador da sala. Sair irá fechar a sala para todos. Deseja continuar?")) {
+            const competitionRef = doc(db, 'competicoes', activeCompetitionId);
+            const batch = writeBatch(db);
+            batch.delete(competitionRef);
+            await batch.commit(); // A sala será fechada para todos via onSnapshot
+        } else {
+            return; // O criador cancelou a saída
+        }
+    } else {
+        // Se um participante normal sai, ele é removido da lista
+        const competitionRef = doc(db, 'competicoes', activeCompetitionId);
+        await updateDoc(competitionRef, {
+            [`participantes.${currentUser.uid}`]: null // Firestore não tem um 'delete field', então usamos null e filtramos
+        });
+    }
+
     if (unsubscribeCompetition) unsubscribeCompetition();
+    if (unsubscribeChat) unsubscribeChat();
+
     activeCompetitionId = null;
     if(waitingRoomModal) waitingRoomModal.classList.remove('visible');
 }

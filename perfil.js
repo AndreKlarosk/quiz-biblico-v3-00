@@ -74,6 +74,10 @@ const allBorders = {
     'simples_azul': { name: 'Azul Simples' },
     'simples_verde': { name: 'Verde Simples' },
     'simples_roxo': { name: 'Roxo Simples' },
+    'floral_verde': { name: 'Floral Verde' },
+    'geometrico_teal': { name: 'Geométrico Teal' },
+    'folhas_violeta': { name: 'Folhas Violeta' },
+    'galhos_cinza': { name: 'Galhos Cinza' },
     'ranking_bronze': { name: 'Bronze Rank' },
     'ranking_prata': { name: 'Prata Rank' },
     'ranking_ouro': { name: 'Ouro Rank' },
@@ -154,10 +158,16 @@ function displayProfileData(data) {
         if (bordersGridModal) {
             bordersGridModal.innerHTML = '';
             const unlockedBorders = new Set(data.bordasDesbloqueadas || []);
+            // Desbloqueando todas as bordas para visualização
             unlockedBorders.add('default');
             unlockedBorders.add('simples_azul');
             unlockedBorders.add('simples_verde');
             unlockedBorders.add('simples_roxo');
+            unlockedBorders.add('floral_verde');
+            unlockedBorders.add('geometrico_teal');
+            unlockedBorders.add('folhas_violeta');
+            unlockedBorders.add('galhos_cinza');
+
 
             Object.keys(allBorders).forEach(key => {
                 if (unlockedBorders.has(key)) {
@@ -165,25 +175,31 @@ function displayProfileData(data) {
                     const borderElement = document.createElement('div');
                     borderElement.className = 'profile-photo-container';
                     borderElement.classList.add(key);
+                    if (key === equippedBorder) {
+                        borderElement.classList.add('selected');
+                    }
                     borderElement.dataset.borderKey = key;
                     borderElement.title = border.name;
                     borderElement.style.width = '80px';
                     borderElement.style.height = '80px';
                     borderElement.style.cursor = 'pointer';
+                    borderElement.style.display = 'inline-flex';
+                    borderElement.style.alignItems = 'center';
+                    borderElement.style.justifyContent = 'center';
+                    borderElement.style.margin = '5px';
+
 
                     const img = document.createElement('img');
                     img.src = data.fotoURL || 'https://placehold.co/150x150/e0e0e0/333?text=?';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
                     borderElement.appendChild(img);
-                    
-                    if (key === equippedBorder) {
-                        borderElement.style.outline = '4px solid var(--accent-color)';
-                    }
                     
                     borderElement.addEventListener('click', async () => {
                         try {
                             const userRef = doc(db, 'usuarios', currentUser.uid);
                             await updateDoc(userRef, { bordaEquipada: key });
-                            if(bordersModal) bordersModal.classList.remove('visible'); // Fecha o modal após a seleção
+                            if(bordersModal) bordersModal.classList.remove('visible');
                             loadProfileData(); 
                         } catch(err) {
                             console.error("Erro ao equipar borda:", err);
